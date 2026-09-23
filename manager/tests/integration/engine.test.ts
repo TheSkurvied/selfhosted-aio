@@ -398,7 +398,7 @@ describe.skipIf(!dbUrl)('engine against mocks', () => {
 		await pushBoth(personId);
 		const limited = await e.s.createShareToken(A, personId, { maxViews: 2 });
 		const tok = limited.url.split('/s/')[1];
-		expect(limited.url.startsWith('http://localhost:5173/s/')).toBe(true);
+		expect(limited.url.startsWith(`${process.env.PUBLIC_URL}/s/`)).toBe(true);
 		expect(await e.s.resolveShareToken(tok)).not.toBeNull();
 		expect(await e.s.resolveShareToken(tok)).not.toBeNull();
 		expect(await e.s.resolveShareToken(tok)).toBeNull();
