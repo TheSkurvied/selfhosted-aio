@@ -6,7 +6,7 @@
  *   <Button loading={busy.is('push')} type="submit">Push</Button>
  */
 import type { SubmitFunction } from '@sveltejs/kit';
-import { applyAction } from '$app/forms';
+import { applyAction, deserialize } from '$app/forms';
 import { toast } from '$lib/ui';
 
 export class Busy {
@@ -81,4 +81,33 @@ export function submitter(busy: Busy | null, key: string, opts: SubmitOptions = 
 			}
 		};
 	};
+}
+
+/**
+ * POST to a form action from script (for data-returning actions such as "diff" or "candidates").
+ * Returns the action's data on success, throws an Error with the UI-safe message otherwise.
+ */
+export async function callAction<T = Record<string, unknown>>(
+	action: string,
+	fields: Record<string, string | string[]> | FormData = {}
+): Promise<T> {
+	let body: FormData;
+	if (fields instanceof FormData) body = fields;
+	else {
+		body = new FormData();
+		for (const [k, v] of Object.entries(fields)) {
+			for (const x of Array.isArray(v) ? v : [v]) body.append(k, x);
+		}
+	}
+	const res = await fetch(action, {
+		method: 'POST',
+		body,
+		headers: { 'x-sveltekit-action': 'true' }
+	});
+	const result = deserialize(await res.text());
+	if (result.type === 'success') return (result.data ?? {}) as T;
+	if (result.type === 'failure') throw new Error(errorMessageOf(result.data as Data));
+	if (result.type === 'error')
+		throw new Error((result.error as { message?: string })?.message ?? 'Request failed');
+	throw new Error('Unexpected redirect');
 }

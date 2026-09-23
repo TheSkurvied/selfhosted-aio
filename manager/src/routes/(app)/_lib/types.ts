@@ -5,6 +5,7 @@ export interface JobRow {
 	id: string;
 	type: string;
 	status: JobStatus;
+	personId?: string | null;
 	personName?: string | null;
 	kind?: string | null;
 	attempts: number;

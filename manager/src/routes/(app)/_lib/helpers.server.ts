@@ -46,9 +46,9 @@ export async function attempt<T>(
 }
 
 /** Resolve a load-time promise to `{ ok, value }` / `{ ok: false, error }` so pages can stream it safely. */
-export async function settle<T>(
-	p: Promise<T>
-): Promise<{ ok: true; value: T } | { ok: false; error: string }> {
+export type Settled<T> = { ok: true; value: T } | { ok: false; error: string };
+
+export async function settle<T>(p: Promise<T>): Promise<Settled<T>> {
 	try {
 		return { ok: true, value: await p };
 	} catch (e) {

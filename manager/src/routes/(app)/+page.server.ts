@@ -7,7 +7,7 @@ import {
 	pushAllPending,
 	syncSummary
 } from '$lib/server/services';
-import { actorOf, attempt, settle } from './_lib/server';
+import { actorOf, attempt, settle } from './_lib/helpers.server';
 import { plural } from './_lib/format';
 
 export const load: PageServerLoad = async ({ depends }) => {
