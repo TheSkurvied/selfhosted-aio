@@ -7,6 +7,7 @@ import type { InstanceKind } from '../db/schema';
 import { env } from '../env';
 import { AiometadataAdapter } from './aiometadata';
 import { AiostreamsAdapter } from './aiostreams';
+import { parseRateSpec } from './http';
 
 export * from './http';
 export * from './types';
@@ -23,7 +24,8 @@ function build() {
 		env.AIOMETADATA_INTERNAL_URL,
 		env.AIOMETADATA_PUBLIC_URL,
 		env.AIOMETADATA_ADMIN_KEY,
-		env.AIOMETADATA_ADDON_PASSWORD ?? ''
+		env.AIOMETADATA_ADDON_PASSWORD ?? '',
+		process.env.AIOSTREAMS_USER_API_LIMIT ?? ''
 	].join('\u0000');
 	if (cache?.key === key) return cache;
 	cache = {
@@ -32,7 +34,10 @@ function build() {
 			internalUrl: env.AIOSTREAMS_INTERNAL_URL,
 			publicUrl: env.AIOSTREAMS_PUBLIC_URL,
 			username: env.AIOSTREAMS_USERNAME,
-			password: env.AIOSTREAMS_PASSWORD
+			password: env.AIOSTREAMS_PASSWORD,
+			// Optional override "max/windowSeconds" (default 5/5, the upstream
+			// default). Raise it together with USER_API_RATE_LIMIT_MAX_REQUESTS.
+			userApiLimit: parseRateSpec(process.env.AIOSTREAMS_USER_API_LIMIT, { max: 5, windowMs: 5000 })
 		}),
 		aiometadata: new AiometadataAdapter({
 			internalUrl: env.AIOMETADATA_INTERNAL_URL,

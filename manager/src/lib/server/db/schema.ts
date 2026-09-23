@@ -26,6 +26,8 @@ export type SecretScope = 'shared' | 'person';
 export type AccountState = 'active' | 'rotating' | 'retired' | 'error';
 export type JobType = 'push' | 'check' | 'rotate' | 'import' | 'delete';
 export type JobStatus = 'queued' | 'running' | 'done' | 'failed';
+/** Outcome of the last push/check against upstream (ENGINE). Pending is derived, not stored. */
+export type CheckStatus = 'ok' | 'drifted' | 'missing' | 'error';
 
 export const INSTANCE_KINDS: readonly InstanceKind[] = ['aiostreams', 'aiometadata'];
 
@@ -231,6 +233,8 @@ export const accounts = pgTable(
 		lastPushAt: tstz('last_push_at'),
 		lastCheckAt: tstz('last_check_at'),
 		lastError: text('last_error'),
+		/** Outcome of the last push/check; null before the first one. */
+		checkStatus: text('check_status').$type<CheckStatus>(),
 		createdAt: createdAt(),
 		retiredAt: tstz('retired_at')
 	},

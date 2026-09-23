@@ -72,6 +72,23 @@ export class AiometadataAdapter implements UpstreamAdapter {
 		return `${this.publicUrl}/stremio/${encodeURIComponent(uuid)}/manifest.json`;
 	}
 
+	/**
+	 * Use upstream's installUrl (it may carry an alias instead of the uuid), but
+	 * always on the PUBLIC base URL, in case HOST_NAME points somewhere internal.
+	 */
+	publicInstallUrl(uuid: string, installUrl: unknown): string {
+		if (typeof installUrl !== 'string' || !installUrl) return this.manifestUrl(uuid);
+		if (installUrl.startsWith(this.publicUrl + '/')) return installUrl;
+		try {
+			const u = new URL(installUrl);
+			const i = u.pathname.indexOf('/stremio/');
+			if (i === -1) return this.manifestUrl(uuid);
+			return this.publicUrl + u.pathname.slice(i) + u.search;
+		} catch {
+			return this.manifestUrl(uuid);
+		}
+	}
+
 	async create(config: Config): Promise<CreateResult> {
 		const password = randomToken(32);
 		const r = await this.req(
@@ -84,9 +101,9 @@ export class AiometadataAdapter implements UpstreamAdapter {
 			},
 			[password]
 		);
-		const j = r.json as { success?: boolean; userUUID?: string } | undefined;
+		const j = r.json as { success?: boolean; userUUID?: string; installUrl?: string } | undefined;
 		if (r.status !== 200 || !j?.success || !j.userUUID) throw this.error('create', r, [password]);
-		return { uuid: j.userUUID, password, manifestUrl: this.manifestUrl(j.userUUID) };
+		return { uuid: j.userUUID, password, manifestUrl: this.publicInstallUrl(j.userUUID, j.installUrl) };
 	}
 
 	async read(uuid: string, password: string): Promise<Config> {
@@ -102,7 +119,19 @@ export class AiometadataAdapter implements UpstreamAdapter {
 		const j = r.json as { success?: boolean; config?: Config } | undefined;
 		if (r.status !== 200 || !j?.config || typeof j.config !== 'object') {
 			if (r.status === 200) throw new UpstreamError('aiometadata', 'read', 'protocol', 200, 'response lacks config');
-			throw this.error('read', r, [password]);
+			const err = this.error('read', r, [password]);
+			if (r.status === 401) {
+				// 401 covers both "gone" and "wrong password" (and an untrusted uuid
+				// without the addon password). The admin detail endpoint tells them apart.
+				const exists = await this.adminDetail(uuid).then(
+					() => true,
+					(e: unknown) => (e instanceof UpstreamError && e.code === 'not_found' ? false : null)
+				);
+				if (exists === false) {
+					throw new UpstreamError('aiometadata', 'read', 'not_found', 404, 'config not found upstream');
+				}
+			}
+			throw err;
 		}
 		return j.config;
 	}

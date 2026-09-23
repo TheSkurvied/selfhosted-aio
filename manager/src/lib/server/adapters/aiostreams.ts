@@ -12,6 +12,7 @@ import {
 	httpRequest,
 	sanitize,
 	SLOW_TIMEOUT_MS,
+	Throttle,
 	UpstreamError,
 	upstreamMessage,
 	type HttpResult,
@@ -24,6 +25,10 @@ export type AiostreamsOptions = {
 	publicUrl: string;
 	username?: string;
 	password?: string;
+	/** Client-side limit for /api/v1/user (upstream default is 5 per 5 s per IP). */
+	userApiLimit?: { max: number; windowMs: number };
+	/** Minimum gap between logins after a 401 (upstream allows 5 logins per 300 s). */
+	loginCooldownMs?: number;
 };
 
 type Envelope = { success?: boolean; data?: unknown; error?: { code?: string; message?: string } | null };
@@ -35,9 +40,17 @@ export class AiostreamsAdapter implements UpstreamAdapter {
 	readonly publicUrl: string;
 	private cookies = new Map<string, string>();
 	private loginPromise: Promise<void> | null = null;
+	private lastLoginAt = 0;
+	private lastLoginFailedAt = 0;
+	private lastUselessLoginAt = 0;
+	private readonly throttle: Throttle;
+	private readonly loginCooldownMs: number;
 
 	constructor(private readonly o: AiostreamsOptions) {
 		this.publicUrl = o.publicUrl.replace(/\/+$/, '');
+		const lim = o.userApiLimit ?? { max: 5, windowMs: 5000 };
+		this.throttle = new Throttle(lim.max, lim.windowMs);
+		this.loginCooldownMs = o.loginCooldownMs ?? 60_000;
 	}
 
 	get hasLogin(): boolean {
@@ -70,6 +83,9 @@ export class AiostreamsAdapter implements UpstreamAdapter {
 	async login(): Promise<void> {
 		if (!this.hasLogin) throw new UpstreamError('aiostreams', 'login', 'config', null, 'AIOSTREAMS_USERNAME/PASSWORD not configured');
 		if (!this.loginPromise) {
+			if (Date.now() - this.lastLoginFailedAt < this.loginCooldownMs) {
+				throw new UpstreamError('aiostreams', 'login', 'config', null, 'login failed recently; not retrying yet');
+			}
 			this.loginPromise = (async () => {
 				this.cookies.clear();
 				const r = await httpRequest({
@@ -82,8 +98,14 @@ export class AiostreamsAdapter implements UpstreamAdapter {
 					scrub: this.scrubList()
 				});
 				if (r.status !== 200) {
-					throw this.error('login', r, this.scrubList());
+					this.lastLoginFailedAt = Date.now();
+					const err = this.error('login', r, this.scrubList());
+					// bad manager credentials are a configuration problem, not a missing config
+					throw err.code === 'unauthorized'
+						? new UpstreamError('aiostreams', 'login', 'config', r.status, 'manager login rejected (check AIOSTREAMS_USERNAME/PASSWORD)')
+						: err;
 				}
+				this.lastLoginAt = Date.now();
 				this.storeCookies(r.headers);
 			})().finally(() => {
 				this.loginPromise = null;
@@ -116,9 +138,11 @@ export class AiostreamsAdapter implements UpstreamAdapter {
 			throw new UpstreamError('aiostreams', op, 'config', null, 'needs AIOSTREAMS_USERNAME/PASSWORD');
 		}
 		if (useSession && this.cookies.size === 0 && session === 'required') await this.login();
+		const throttled = req.path === '/api/v1/user';
 		const run = () =>
 			httpRequest({
 				...req,
+				beforeSend: throttled ? () => this.throttle.acquire() : undefined,
 				kind: 'aiostreams',
 				op,
 				baseUrl: this.o.internalUrl,
@@ -128,10 +152,18 @@ export class AiostreamsAdapter implements UpstreamAdapter {
 					...(useSession && this.cookieHeader() ? { cookie: this.cookieHeader()! } : {})
 				}
 			});
+		const loginAtStart = this.lastLoginAt;
 		let r = await run();
+		// 401 UNAUTHORIZED or ADDON_PASSWORD_INVALID: the session expired. Log in
+		// again at most once per request. If a fresh login did not help, stop
+		// logging in for a while (upstream allows 5 logins per 300 s).
 		if (useSession && r.status === 401) {
-			await this.login();
+			if (this.lastLoginAt === loginAtStart) {
+				if (Date.now() - this.lastUselessLoginAt < this.loginCooldownMs) return r;
+				await this.login();
+			}
 			r = await run();
+			if (r.status === 401) this.lastUselessLoginAt = Date.now();
 		}
 		return r;
 	}

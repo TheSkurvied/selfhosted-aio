@@ -81,6 +81,8 @@ export type RequestOptions = {
 	/** Longest in-place wait for a 429 (default 15s); longer Retry-After values bubble up. */
 	maxRetryWaitMs?: number;
 	scrub?: string[];
+	/** Awaited before every attempt (client-side throttling). */
+	beforeSend?: () => Promise<void>;
 };
 
 export const DEFAULT_TIMEOUT_MS = 15_000;
@@ -112,6 +114,7 @@ export async function httpRequest(o: RequestOptions): Promise<HttpResult> {
 	const maxWait = o.maxRetryWaitMs ?? 15_000;
 	for (let attempt = 0; ; attempt++) {
 		let res: Response;
+		if (o.beforeSend) await o.beforeSend();
 		try {
 			res = await fetch(url, {
 				method: o.method,
@@ -176,4 +179,44 @@ export function codeForStatus(status: number): UpstreamErrorCode {
 	if (status >= 500) return 'server';
 	if (status >= 300 && status < 400) return 'protocol';
 	return 'invalid';
+}
+
+/**
+ * Client-side sliding-window throttle (AIOStreams limits every /api/v1/user
+ * method to 5 requests per 5 s per IP, and all manager traffic is one IP).
+ */
+export class Throttle {
+	private stamps: number[] = [];
+	private chain: Promise<void> = Promise.resolve();
+	constructor(
+		readonly max: number,
+		readonly windowMs: number
+	) {}
+
+	/** Resolves when a request may be sent (FIFO). */
+	acquire(): Promise<void> {
+		if (this.max <= 0) return Promise.resolve();
+		const next = this.chain.then(async () => {
+			for (;;) {
+				const now = Date.now();
+				this.stamps = this.stamps.filter((t) => now - t < this.windowMs);
+				if (this.stamps.length < this.max) {
+					this.stamps.push(now);
+					return;
+				}
+				await sleep(this.stamps[0] + this.windowMs - now + 25);
+			}
+		});
+		this.chain = next.catch(() => {});
+		return next;
+	}
+}
+
+/** Parse "max/windowSeconds" (e.g. "5/5"); "0" or "off" disables. */
+export function parseRateSpec(spec: string | undefined, fallback: { max: number; windowMs: number }) {
+	if (!spec) return fallback;
+	if (/^(0|off|none)$/i.test(spec.trim())) return { max: 0, windowMs: 0 };
+	const m = /^(\d+)\s*\/\s*(\d+(?:\.\d+)?)$/.exec(spec.trim());
+	if (!m) return fallback;
+	return { max: Number(m[1]), windowMs: Math.round(Number(m[2]) * 1000) };
 }
