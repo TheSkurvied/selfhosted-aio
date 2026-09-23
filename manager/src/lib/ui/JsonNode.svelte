@@ -96,7 +96,7 @@
 		min-height: 20px;
 		padding-left: 14px;
 		white-space: pre-wrap;
-		word-break: break-all;
+		overflow-wrap: anywhere;
 	}
 	.toggle {
 		position: relative;
@@ -144,6 +144,8 @@
 		margin-right: 1ch;
 	}
 	.summary {
+		display: inline-block;
+		white-space: nowrap;
 		margin: 0 4px;
 		padding: 0 4px;
 		border-radius: var(--radius-sm);

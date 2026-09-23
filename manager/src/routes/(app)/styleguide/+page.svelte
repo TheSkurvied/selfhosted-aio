@@ -503,7 +503,7 @@
 				<CodeEditor label="Invalid example" bind:value={badCode} minLines={4} />
 				<div>
 					<p class="label">Rendered preview (secrets masked)</p>
-					<JsonView value={sample} />
+					<JsonView value={sample} expandDepth={3} />
 				</div>
 			</div>
 		</section>
