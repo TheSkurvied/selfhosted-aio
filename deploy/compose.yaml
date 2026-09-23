@@ -253,6 +253,9 @@ services:
       MANAGER_KEY: ${MANAGER_KEY:?set MANAGER_KEY (openssl rand -hex 32)}
       # The variables below are aio-manager's own names (not upstream).
       PORT: "8080"
+      # Caddy is one proxy hop in front; lets rate limits see the real client IP.
+      ADDRESS_HEADER: X-Forwarded-For
+      XFF_DEPTH: "1"
       PUBLIC_URL: https://manage.${DOMAIN}
       AIOSTREAMS_INTERNAL_URL: http://aiostreams:3000
       AIOSTREAMS_PUBLIC_URL: https://streams.${DOMAIN}

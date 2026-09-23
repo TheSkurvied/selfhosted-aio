@@ -3,7 +3,11 @@
 declare global {
 	namespace App {
 		// interface Error {}
-		// interface Locals {}
+		interface Locals {
+			admin: { id: string; email: string } | null;
+			/** sha256 of the session token (the sessions.id primary key). */
+			sessionId: string | null;
+		}
 		// interface PageData {}
 		// interface PageState {}
 		// interface Platform {}

@@ -98,16 +98,16 @@ log.info/warn/error(msg, fields?)   // JSON lines; redacts keys matching /pass|k
 
 ## Auth form contract (FOUNDATION server, DESIGN svelte)
 
-- `/setup`: action `default`.
-  - Fields: `email`, `password`, `password2`.
-  - On success it returns `{ step: 'totp', totpUri, totpSecret, qrSvg }`. The page then posts to action `?/confirm` with `code`.
-  - That returns `{ recoveryCodes: string[] }`, and then the page links to `/`.
+- `/setup` has **no `default` action**, because SvelteKit does not allow one next to named actions.
+  - The first form posts to `?/setup` with `email`, `password` and `password2`. It returns `{ step: 'totp', totpUri, totpSecret, qrSvg }`.
+  - The second form posts to `?/confirm` with `code`. It returns `{ recoveryCodes: string[] }`.
+  - Load data is `{ done: boolean }`.
 - `/login`: action `default` with `email` and `password`.
-  - On success it redirects to `/login/totp`, using a short-lived signed pending cookie.
-  - `form?.error` is a string.
-  - The page data carries `oidcEnabled: boolean`. When it is true, show a "Continue with SSO" link to `/auth/oidc`.
-- `/login/totp`: action `default`, field `code`, which takes a 6-digit code or a recovery code. Redirects to `/`.
-- `/auth/logout`: POST form, which redirects to `/login`.
+  - On success it redirects to `/login/totp`. `form?.error` is a string.
+  - Page data is `{ oidcEnabled, ssoError: string | null }`.
+  - "Continue with SSO" is a plain link to `/auth/oidc`, because the CSP has `form-action 'self'`.
+- `/login/totp`: action `default`, field `code`, which takes a 6-digit code or a recovery code.
+- Logout: `<form method="POST" action="/auth/logout">`.
 
 ## Engine service API (ENGINE implements, PAGES consumes)
 
