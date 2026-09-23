@@ -1,0 +1,92 @@
+# Caddy config for streams.<DOMAIN>, meta.<DOMAIN>, manage.<DOMAIN>.
+# DOMAIN, ACME_EMAIL and ADMIN_ALLOW_CIDRS come from the caddy service env.
+#
+# Public on purpose: /stremio/* (manifests, catalogs, meta, streams), the
+# configure pages and the user APIs. Stremio clients carry no cookies or basic
+# auth, so the addon routes MUST stay public.
+#
+# Admin surfaces (dashboard pages and their APIs) go through the
+# (admin_guard) snippet. Choose ONE protection:
+#
+#   A) IP allowlist (default below): set ADMIN_ALLOW_CIDRS in .env to your home
+#      IP / Tailscale range. Invisible to you, no second password, but you lose
+#      access from other networks until you update .env and restart caddy.
+#      The default (0.0.0.0/0 ::/0) allows everyone, i.e. only the apps' own
+#      logins protect the dashboards.
+#
+#   B) Basic auth: a second password in front of the apps' own logins. Works
+#      from anywhere, but you log in twice, and a browser-cached basic-auth
+#      prompt can confuse the dashboards' own sign-in/logout flows.
+#      Generate a hash: docker compose exec caddy caddy hash-password
+#
+# aio-manager talks to the addons over the docker network, so neither option
+# affects it.
+{
+	email {$ACME_EMAIL}
+}
+
+(security_headers) {
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "camera=(), microphone=(), geolocation=(), interest-cohort=()"
+		-Server
+		-X-Powered-By
+	}
+	# No CSP and no X-Frame-Options here: both addons ship their own UIs and
+	# set CORS for Stremio; a generic policy would break them.
+}
+
+(admin_guard) {
+	# Option A: IP allowlist.
+	@admin_blocked not remote_ip {$ADMIN_ALLOW_CIDRS:0.0.0.0/0 ::/0}
+	respond @admin_blocked "Forbidden" 403
+
+	# Option B: basic auth (comment out option A, uncomment this, paste a hash).
+	# basic_auth {
+	# 	admin $2a$14$REPLACE_WITH_OUTPUT_OF_caddy_hash-password
+	# }
+}
+
+streams.{$DOMAIN} {
+	import security_headers
+	encode zstd gzip
+
+	@dashboard path /dashboard /dashboard/* /api/v1/dashboard /api/v1/dashboard/*
+	handle @dashboard {
+		import admin_guard
+		reverse_proxy aiostreams:3000
+	}
+
+	handle {
+		# Stream proxying (built-in proxy) can hold connections open for a long time.
+		reverse_proxy aiostreams:3000 {
+			flush_interval -1
+		}
+	}
+}
+
+meta.{$DOMAIN} {
+	import security_headers
+	# AIOMetadata compresses its own responses (RESPONSE_COMPRESSION_ENABLED).
+
+	@dashboard path /dashboard /dashboard/* /api/dashboard /api/dashboard/* /api/admin/*
+	handle @dashboard {
+		import admin_guard
+		reverse_proxy aiometadata:3232
+	}
+
+	handle {
+		reverse_proxy aiometadata:3232
+	}
+}
+
+manage.{$DOMAIN} {
+	import security_headers
+	encode zstd gzip
+	# aio-manager has its own admin login (OIDC or password + TOTP). Add admin_guard here too
+	# if only you and a few people should reach it:
+	# import admin_guard
+	reverse_proxy aio-manager:8080
+}

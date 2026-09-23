@@ -41,14 +41,14 @@ Read `01-research.md` first.
 
 ## 3. Tech stack
 
-- **Framework: SvelteKit** with `adapter-node`, TypeScript, **Drizzle ORM**, and **SQLite** through `better-sqlite3`.
-- **Packaging:** one container, one volume (`/data/manager.sqlite`).
+- **Framework: SvelteKit** with `adapter-node`, TypeScript, **Drizzle ORM**, and **Postgres** (the `manager` database in the shared `postgres:17` service from `deploy/compose.yaml`, reached through `DATABASE_URL`).
+- **Packaging:** one stateless container. All state is in Postgres. It serves `GET /healthz` for the compose healthcheck and ships `wget`.
 - **Background work:** jobs run in the same Node process, taken from a `jobs` table. There is no Redis.
 
 Why this stack:
 - SvelteKit form actions and server-only modules (`$lib/server`) keep secrets off the client without a separate API tier.
-- SQLite fits the data size and works with the Hetzner backups and nightly dumps already planned.
-- Drizzle can move to Postgres later without rewriting the queries.
+- Postgres is already in the stack, and the nightly `pg_dump` in `deploy/scripts/backup.sh` covers it. That makes the manager's backups the same as everyone else's.
+- Drizzle lets a dev setup run on SQLite if you want, with no rewrite.
 - Next.js would also work, but it is heavier than an admin tool with five screens needs.
 
 Libraries:
@@ -75,7 +75,7 @@ Libraries:
 
 ## 5. Handling secrets
 
-- `MANAGER_KEY` is 32 random bytes, passed as a Docker secret. It is the key that encrypts data at rest.
+- `MANAGER_KEY` is 32 random bytes (`openssl rand -hex 32`), set in `deploy/.env`. It is the key that encrypts data at rest.
 - Every secret column is sealed with **AES-256-GCM** and stored as `v1:nonce:ciphertext:tag`.
   - Each value gets a random 12-byte nonce.
   - The AAD is `table.column.rowId`, so a value copied to another row will not decrypt.
@@ -96,7 +96,7 @@ Libraries:
 - Upstream passwords are generated with 32 random bytes in base64url. AIOStreams needs at least 6 characters (`users.ts:82`).
 - **The rendered config always contains secrets.** Diffs and the audit log therefore show only hashes and the paths that changed, never the values.
 
-## 6. Data model (Drizzle, SQLite)
+## 6. Data model (Drizzle, Postgres)
 
 | Table | Columns |
 |---|---|
@@ -379,9 +379,9 @@ GET    /s/:token                          public share page
 
 ## 11. Security considerations
 
-- **`MANAGER_KEY` and `manager.sqlite` together hold every debrid key and every upstream password.**
-  - Keep the key out of the backups, for example in a password manager.
-  - Backups of the SQLite file are useless without it.
+- **`MANAGER_KEY` and the `manager` database together hold every debrid key and every upstream password.**
+  - `deploy/scripts/backup.sh` puts `.env` (and so this key) inside the restic repository, which restic encrypts. Keep the restic password and a copy of `.env` in a password manager, not on the server alone.
+  - A database dump is useless without the key.
 - **`SECRET_KEY` must be backed up too.** The manager stores AIOStreams manifest links, and those depend on the AIOStreams `SECRET_KEY` staying the same.
 - **Share tokens:**
   - 32 random bytes; only their hash is stored.
