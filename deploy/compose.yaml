@@ -1,0 +1,328 @@
+# Self-hosted AIOStreams + AIOMetadata + aio-manager
+#
+# Layout (run from this directory, next to .env):
+#   docker compose up -d
+#
+# Networks:
+#   edge     normal bridge with internet egress. Caddy and the three apps.
+#   backend  internal-only (no egress, no published ports). Postgres and Redis.
+# Only Caddy publishes ports (80, 443/tcp, 443/udp for HTTP/3).
+#
+# Env var names below were checked against:
+#   AIOStreams   .env.sample + packages/core/src/config/schema/*.ts
+#   AIOMetadata  .env.example + addon/lib/settingsRegistry.ts
+# aio-manager variables (other than DATABASE_URL and MANAGER_KEY) are
+# defined by our own app and are marked as such.
+
+name: aio
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  # ---------------------------------------------------------------------------
+  # Reverse proxy with automatic HTTPS (Let's Encrypt / ZeroSSL)
+  # ---------------------------------------------------------------------------
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      DOMAIN: ${DOMAIN:?set DOMAIN in .env}
+      ACME_EMAIL: ${ACME_EMAIL:?set ACME_EMAIL in .env}
+      # Space-separated CIDRs allowed to reach the admin dashboards.
+      # Default allows everyone (the apps' own logins still apply).
+      ADMIN_ALLOW_CIDRS: ${ADMIN_ALLOW_CIDRS:-0.0.0.0/0 ::/0}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./data/caddy/data:/data
+      - ./data/caddy/config:/config
+    networks:
+      - edge
+    depends_on:
+      aiostreams:
+        condition: service_healthy
+      aiometadata:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:2019/config/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    logging: *logging
+
+  # ---------------------------------------------------------------------------
+  # AIOStreams (port 3000). Distroless image: no shell tools except busybox
+  # wget/sh, so the healthcheck reuses the image's own node script, which
+  # calls GET /api/v1/status.
+  # ---------------------------------------------------------------------------
+  aiostreams:
+    image: ghcr.io/viren070/aiostreams:${AIOSTREAMS_TAG:-v2}
+    restart: unless-stopped
+    environment:
+      # --- bootstrap settings (env only) ---
+      BASE_URL: https://streams.${DOMAIN}
+      # NEVER change SECRET_KEY after first start: it encrypts every stored config.
+      SECRET_KEY: ${AIOSTREAMS_SECRET_KEY:?set AIOSTREAMS_SECRET_KEY (openssl rand -hex 32)}
+      DATABASE_URI: postgres://aiostreams:${AIOSTREAMS_DB_PASSWORD:?}@postgres:5432/aiostreams
+      NODE_ENV: production
+      LOG_LEVEL: ${AIOSTREAMS_LOG_LEVEL:-info}
+      LOG_FORMAT: json
+      # Single instance: no need to poll the DB for settings changes.
+      SETTINGS_REFRESH_INTERVAL: "0"
+      # Operator logins, "user:pass,user2:pass2". Unlisted users default to admin.
+      AIOSTREAMS_AUTH: ${AIOSTREAMS_AUTH:?set AIOSTREAMS_AUTH (admin:<password>)}
+      # --- runtime settings ---
+      # Everything else is a runtime setting. Prefer the dashboard (/dashboard ->
+      # Settings). Setting a runtime var here LOCKS it in the UI, and AIOStreams
+      # treats an empty string as "set", so only uncomment lines you fill in.
+      # Torrentio / strem.fun 403 fix (see docs/02-hosting.md):
+      # ADDON_PROXY: ${ADDON_PROXY}
+      # ADDON_PROXY_CONFIG: "*:false,*.strem.fun:true"
+      # DEFAULT_TIMEOUT: "5000"
+      # AIOSTREAMS_AUTH_PERMISSIONS: ${AIOSTREAMS_AUTH_PERMISSIONS}
+      # AIOSTREAMS_AUTH_REQUIRED: "true"
+      # TRUSTED_UUIDS: ${AIOSTREAMS_TRUSTED_UUIDS}
+      # Default TRUSTED_IPS (loopback, linklocal, uniquelocal) already trusts
+      # Caddy on the docker bridge, so X-Forwarded-For is honoured.
+    volumes:
+      - ./data/aiostreams:/app/data
+    networks:
+      - edge
+      - backend
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "/nodejs/bin/node", "/app/scripts/healthcheck.js"]
+      interval: 30s
+      timeout: 15s
+      retries: 3
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          memory: 1g
+    logging: *logging
+
+  # ---------------------------------------------------------------------------
+  # AIOMetadata (port 3232). Pin the major tag "3": a stray v5.0.0 tag exists.
+  # ---------------------------------------------------------------------------
+  aiometadata:
+    image: ghcr.io/cedya77/aiometadata:${AIOMETADATA_TAG:-3}
+    restart: unless-stopped
+    init: true
+    environment:
+      PORT: "3232"
+      HOST_NAME: https://meta.${DOMAIN}
+      NODE_ENV: production
+      LOG_LEVEL: ${AIOMETADATA_LOG_LEVEL:-info}
+      TZ: ${TZ:-Etc/UTC}
+      DATABASE_URI: postgresql://aiometadata:${AIOMETADATA_DB_PASSWORD:?}@postgres:5432/aiometadata
+      REDIS_URL: redis://redis-aiometadata:6379
+      # Redis is dedicated to AIOMetadata, so let it tune server-wide options.
+      REDIS_AUTOTUNE: "true"
+      # One reverse proxy (Caddy) in front.
+      TRUST_PROXY_HOPS: "1"
+      # --- security ---
+      ADMIN_KEY: ${AIOMETADATA_ADMIN_KEY:?set AIOMETADATA_ADMIN_KEY (openssl rand -hex 32)}
+      IMAGE_PROXY_SIGNING_SECRET: ${AIOMETADATA_IMAGE_PROXY_SIGNING_SECRET:?}
+      ADDON_PASSWORD: ${AIOMETADATA_ADDON_PASSWORD:-}
+      POSTER_PROXY_ALLOW_PRIVATE: "false"
+      USER_ALIASES_ENABLED: "false"
+      # --- server-side API keys (never sent to browsers) ---
+      BUILT_IN_TMDB_API_KEY: ${BUILT_IN_TMDB_API_KEY:-}
+      BUILT_IN_TVDB_API_KEY: ${BUILT_IN_TVDB_API_KEY:-}
+      BUILT_IN_FANART_API_KEY: ${BUILT_IN_FANART_API_KEY:-}
+      BUILT_IN_RPDB_API_KEY: ${BUILT_IN_RPDB_API_KEY:-}
+      # Paid per call: private instance only.
+      BUILT_IN_MDBLIST_API_KEY: ${BUILT_IN_MDBLIST_API_KEY:-}
+      BUILT_IN_GEMINI_API_KEY: ${BUILT_IN_GEMINI_API_KEY:-}
+      # --- anime ---
+      # Public Jikan shuts down 2026-10-01. Point this at a self-hosted Jikan.
+      JIKAN_API_BASE: ${JIKAN_API_BASE:-https://api.jikan.moe/v4}
+      # --- optional OAuth integrations ---
+      TRAKT_CLIENT_ID: ${TRAKT_CLIENT_ID:-}
+      TRAKT_CLIENT_SECRET: ${TRAKT_CLIENT_SECRET:-}
+      TRAKT_REDIRECT_URI: https://meta.${DOMAIN}/api/auth/trakt/callback
+      DISABLE_TRAKT_SEARCH: ${DISABLE_TRAKT_SEARCH:-false}
+      # Warming spends upstream API quota; "essential" is the lighter mode.
+      CACHE_WARMUP_MODE: ${CACHE_WARMUP_MODE:-essential}
+    volumes:
+      - ./data/aiometadata:/app/addon/data
+    networks:
+      - edge
+      - backend
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis-aiometadata:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3232/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          memory: 1536m
+    logging: *logging
+
+  # ---------------------------------------------------------------------------
+  # Redis 8 dedicated to AIOMetadata (needs HSETEX/HTTL, i.e. Redis >= 8.0).
+  # It is a cache: excluded from backups, safe to wipe.
+  # ---------------------------------------------------------------------------
+  redis-aiometadata:
+    image: redis:8
+    restart: unless-stopped
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
+      - --save
+      - "3600 1"
+      - --maxmemory
+      - ${AIOMETADATA_REDIS_MAXMEMORY:-768mb}
+    volumes:
+      - ./data/redis-aiometadata:/data
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 1g
+    logging: *logging
+
+  # ---------------------------------------------------------------------------
+  # PostgreSQL 17: one cluster, three databases (aiostreams, aiometadata,
+  # manager), each owned by its own role. Created on first start by
+  # postgres-init/10-create-databases.sh.
+  # ---------------------------------------------------------------------------
+  postgres:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_SUPERUSER_PASSWORD:?}
+      POSTGRES_DB: postgres
+      # Read by the init script only.
+      AIOSTREAMS_DB_PASSWORD: ${AIOSTREAMS_DB_PASSWORD:?}
+      AIOMETADATA_DB_PASSWORD: ${AIOMETADATA_DB_PASSWORD:?}
+      MANAGER_DB_PASSWORD: ${MANAGER_DB_PASSWORD:?}
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+      - ./postgres-init:/docker-entrypoint-initdb.d:ro
+    networks:
+      - backend
+    shm_size: 128mb
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    deploy:
+      resources:
+        limits:
+          memory: 768m
+    logging: *logging
+
+  # ---------------------------------------------------------------------------
+  # aio-manager (our app, port 8080). Talks to the addons over the edge
+  # network by service name, bypassing Caddy.
+  # ---------------------------------------------------------------------------
+  aio-manager:
+    image: ${AIO_MANAGER_IMAGE:-ghcr.io/theskurvied/aio-manager:latest}
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgres://manager:${MANAGER_DB_PASSWORD:?}@postgres:5432/manager
+      MANAGER_KEY: ${MANAGER_KEY:?set MANAGER_KEY (openssl rand -hex 32)}
+      # The variables below are aio-manager's own names (not upstream).
+      PORT: "8080"
+      # Caddy is one proxy hop in front; lets rate limits see the real client IP.
+      ADDRESS_HEADER: X-Forwarded-For
+      XFF_DEPTH: "1"
+      PUBLIC_URL: https://manage.${DOMAIN}
+      AIOSTREAMS_INTERNAL_URL: http://aiostreams:3000
+      AIOSTREAMS_PUBLIC_URL: https://streams.${DOMAIN}
+      AIOMETADATA_INTERNAL_URL: http://aiometadata:3232
+      AIOMETADATA_PUBLIC_URL: https://meta.${DOMAIN}
+      AIOMETADATA_ADMIN_KEY: ${AIOMETADATA_ADMIN_KEY:?}
+      AIOMETADATA_ADDON_PASSWORD: ${AIOMETADATA_ADDON_PASSWORD:-}
+      AIOSTREAMS_USERNAME: ${MANAGER_AIOSTREAMS_USERNAME:-}
+      AIOSTREAMS_PASSWORD: ${MANAGER_AIOSTREAMS_PASSWORD:-}
+      OIDC_ISSUER: ${MANAGER_OIDC_ISSUER:-}
+      OIDC_CLIENT_ID: ${MANAGER_OIDC_CLIENT_ID:-}
+      OIDC_CLIENT_SECRET: ${MANAGER_OIDC_CLIENT_SECRET:-}
+      ADMIN_EMAILS: ${MANAGER_ADMIN_EMAILS:-}
+      NTFY_URL: ${MANAGER_NTFY_URL:-}
+      CHECK_INTERVAL_HOURS: ${MANAGER_CHECK_INTERVAL_HOURS:-6}
+      AIOSTREAMS_USER_API_LIMIT: ${MANAGER_AIOSTREAMS_USER_API_LIMIT:-5/5}
+    networks:
+      - edge
+      - backend
+    depends_on:
+      postgres:
+        condition: service_healthy
+      aiostreams:
+        condition: service_healthy
+      aiometadata:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://localhost:8080/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    deploy:
+      resources:
+        limits:
+          memory: 256m
+    logging: *logging
+
+  # ---------------------------------------------------------------------------
+  # OPTIONAL: gluetun as an outbound HTTP proxy for strem.fun (Torrentio) only.
+  # Then set in AIOStreams (dashboard, or uncomment above):
+  #   ADDON_PROXY=http://gluetun:8888
+  #   ADDON_PROXY_CONFIG=*:false,*.strem.fun:true
+  # Commercial VPN exits are often challenged by Cloudflare too; a residential
+  # exit (e.g. a Tailscale exit node at home) is more reliable. See docs.
+  # ---------------------------------------------------------------------------
+  # gluetun:
+  #   image: qmcgaw/gluetun:v3
+  #   restart: unless-stopped
+  #   cap_add:
+  #     - NET_ADMIN
+  #   devices:
+  #     - /dev/net/tun:/dev/net/tun
+  #   environment:
+  #     VPN_SERVICE_PROVIDER: ${GLUETUN_VPN_SERVICE_PROVIDER}
+  #     VPN_TYPE: wireguard
+  #     WIREGUARD_PRIVATE_KEY: ${GLUETUN_WIREGUARD_PRIVATE_KEY}
+  #     SERVER_COUNTRIES: ${GLUETUN_SERVER_COUNTRIES:-Netherlands}
+  #     HTTPPROXY: "on"
+  #     HTTPPROXY_LISTENING_ADDRESS: ":8888"
+  #   networks:
+  #     - edge
+  #   logging: *logging
+
+networks:
+  edge:
+    driver: bridge
+  backend:
+    driver: bridge
+    internal: true
