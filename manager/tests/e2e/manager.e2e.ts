@@ -110,3 +110,20 @@ test('revoking the share link turns the page into the expired page', async ({ br
 	).toBeVisible();
 	await anon.close();
 });
+
+test('JSON API refuses cross-origin writes, even without a form content type', async () => {
+	// A same-site page (sibling subdomain) gets the SameSite=Lax cookie and can send a
+	// no-cors POST with a Blob body (no Content-Type), which SvelteKit's form check skips.
+	const evil = await page.request.post('/api/people', {
+		headers: { origin: 'https://streams.example.com' },
+		data: Buffer.from(JSON.stringify({ displayName: 'CSRF victim' }))
+	});
+	expect(evil.status()).toBe(403);
+	const people = await (await page.request.get('/api/people')).json();
+	expect(people.some((p: { displayName: string }) => p.displayName === 'CSRF victim')).toBe(false);
+
+	const own = await page.request.post('/api/sync/check-all', {
+		headers: { origin: new URL(page.url()).origin }
+	});
+	expect(own.status()).toBe(200);
+});

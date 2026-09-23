@@ -3,9 +3,8 @@ import { eq } from 'drizzle-orm';
 import { audit } from '$lib/server/audit';
 import {
 	clientIp,
-	isRateLimited,
 	loginBucket,
-	recordFailure,
+	reserveAttempt,
 	setPendingLogin,
 	verifyDummy,
 	verifyPassword
@@ -41,7 +40,9 @@ export const actions: Actions = {
 
 		const ip = clientIp(event);
 		const bucket = loginBucket(email, ip);
-		if (await isRateLimited(bucket))
+		// check and record in one step, so a parallel burst cannot bypass the limit
+		const attempt = await reserveAttempt(bucket);
+		if (!attempt.allowed)
 			return fail(429, { error: 'Too many failed attempts. Try again in 15 minutes.', email });
 
 		const [admin] = await db.select().from(t.admins).where(eq(t.admins.email, email));
@@ -49,7 +50,7 @@ export const actions: Actions = {
 			? await verifyPassword(admin.passwordHash, password)
 			: await verifyDummy(password);
 		if (!admin || !ok) {
-			await recordFailure(bucket);
+			// the reserved attempt stays recorded as the failure
 			await audit({
 				actor: admin?.id ?? 'system',
 				action: 'auth.login_failed',
@@ -60,6 +61,7 @@ export const actions: Actions = {
 			});
 			return fail(400, { error: GENERIC, email });
 		}
+		await attempt.release();
 		if (!admin.totpSecretEnc)
 			return fail(400, {
 				error:

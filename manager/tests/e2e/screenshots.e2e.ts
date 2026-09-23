@@ -79,9 +79,7 @@ test('seed data', async () => {
 			presets: [],
 			formatter: { id: 'gdrive' },
 			sortCriteria: { global: [{ key: 'cached', direction: 'desc' }] },
-			services: [
-				{ id: 'realdebrid', enabled: true, credentials: { apiKey: '{{secret:rd_key}}' } }
-			]
+			services: [{ id: 'realdebrid', enabled: true, credentials: { apiKey: '{{secret:rd_key}}' } }]
 		},
 		note: 'Initial version'
 	});
@@ -130,9 +128,7 @@ test('seed data', async () => {
 					{ key: 'resolution', direction: 'desc' }
 				]
 			},
-			services: [
-				{ id: 'realdebrid', enabled: true, credentials: { apiKey: '{{secret:rd_key}}' } }
-			]
+			services: [{ id: 'realdebrid', enabled: true, credentials: { apiKey: '{{secret:rd_key}}' } }]
 		},
 		note: 'Sort by resolution after cache'
 	});

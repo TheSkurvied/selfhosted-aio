@@ -5,6 +5,7 @@ import {
 	SESSION_COOKIE,
 	deleteSessionCookie,
 	hasAdmins,
+	isCrossOriginMutation,
 	setSessionCookie,
 	validateSessionToken
 } from '$lib/server/auth';
@@ -60,6 +61,20 @@ function isPublicPath(pathname: string): boolean {
 
 const isApi = (pathname: string) => pathname === '/api' || pathname.startsWith('/api/');
 const isShare = (pathname: string) => pathname.startsWith('/s/');
+
+/**
+ * CSRF for everything, not only form content types (SvelteKit's check): a
+ * cross-origin POST/PUT/PATCH/DELETE is refused before any session is read.
+ */
+const csrfHandle: Handle = async ({ event, resolve }) => {
+	if (isCrossOriginMutation(event.request, event.url)) {
+		const message = 'Cross-origin requests are forbidden';
+		return isApi(event.url.pathname)
+			? json({ error: message }, { status: 403 })
+			: new Response(message, { status: 403, headers: { 'content-type': 'text/plain' } });
+	}
+	return resolve(event);
+};
 
 const sessionHandle: Handle = async ({ event, resolve }) => {
 	event.locals.admin = null;
@@ -122,4 +137,4 @@ const headersHandle: Handle = async ({ event, resolve }) => {
 	return response;
 };
 
-export const handle: Handle = sequence(sessionHandle, guardHandle, headersHandle);
+export const handle: Handle = sequence(csrfHandle, sessionHandle, guardHandle, headersHandle);

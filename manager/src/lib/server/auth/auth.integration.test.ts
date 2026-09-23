@@ -82,6 +82,38 @@ describe.skipIf(!TEST_DB)('auth against Postgres', () => {
 		expect(await rl.isRateLimited(bucket)).toBe(false);
 	});
 
+	it('the old check-then-record pattern lets a concurrent burst through (demo)', async () => {
+		const rl = await import('./ratelimit');
+		const bucket = rl.totpBucket(adminId, '10.0.0.9');
+		const passed = await Promise.all(
+			Array.from({ length: 20 }, async () => {
+				if (await rl.isRateLimited(bucket)) return false;
+				await rl.recordFailure(bucket);
+				return true;
+			})
+		);
+		expect(passed.filter(Boolean).length).toBeGreaterThan(rl.MAX_FAILURES);
+		await rl.clearFailures(bucket);
+	});
+
+	it('reserveAttempt admits at most MAX_FAILURES attempts from a concurrent burst', async () => {
+		const rl = await import('./ratelimit');
+		const bucket = rl.totpBucket(adminId, '10.0.0.10');
+		const results = await Promise.all(Array.from({ length: 25 }, () => rl.reserveAttempt(bucket)));
+		expect(results.filter((r) => r.allowed)).toHaveLength(rl.MAX_FAILURES);
+		expect(await rl.isRateLimited(bucket)).toBe(true);
+		// a released (successful) attempt does not count as a failure
+		const other = rl.loginBucket(email, '10.0.0.11');
+		const r = await rl.reserveAttempt(other);
+		expect(r.allowed).toBe(true);
+		await r.release();
+		for (let i = 0; i < rl.MAX_FAILURES; i++)
+			expect((await rl.reserveAttempt(other)).allowed).toBe(true);
+		expect((await rl.reserveAttempt(other)).allowed).toBe(false);
+		await rl.clearFailures(bucket);
+		await rl.clearFailures(other);
+	});
+
 	it('verifies TOTP once (replay guard) and consumes recovery codes once', async () => {
 		const sf = await import('./second-factor');
 		const totp = await import('./totp');

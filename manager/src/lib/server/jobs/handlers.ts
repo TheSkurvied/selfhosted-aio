@@ -60,6 +60,45 @@ async function loadRendered(personId: string, kind: InstanceKind) {
 	return { b, person, r };
 }
 
+type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+/**
+ * Lock the person row and report whether it may still hold live configs.
+ * A revoke (which disables the person first) either sees what this
+ * transaction commits, or this transaction sees the revoke.
+ */
+async function lockEnabledPerson(tx: Tx, personId: string): Promise<boolean> {
+	const [row] = await tx
+		.select({ disabled: t.people.disabled })
+		.from(t.people)
+		.where(eq(t.people.id, personId))
+		.for('update');
+	return !!row && !row.disabled;
+}
+
+/** Best effort: delete a config this job just created and no longer wants. */
+async function discardCreated(
+	kind: InstanceKind,
+	uuid: string | null,
+	password: string | null,
+	accountId: string | null
+): Promise<boolean> {
+	let deleted = false;
+	try {
+		if (uuid) await getAdapter(kind).delete(uuid, password);
+		deleted = true;
+	} catch {
+		// left for the orphan report (and the account row, if any, keeps its creds)
+	}
+	if (accountId) {
+		await db
+			.update(t.accounts)
+			.set({ state: 'retired', retiredAt: new Date() })
+			.where(eq(t.accounts.id, accountId));
+	}
+	return deleted;
+}
+
 function assertRenderable(r: RenderedBinding) {
 	if (r.missingSecrets.length)
 		throw new PermanentJobError(`missing secrets: ${r.missingSecrets.join(', ')}`);
@@ -139,20 +178,30 @@ const push: Handler = async (job, ctx) => {
 				manifestSecret: res.manifestSecret ?? null,
 				manifestUrl: res.manifestUrl
 			});
-			if (acc) {
-				await db
-					.update(t.accounts)
-					.set({ remoteUuid: res.uuid, ...sealed, keyVersion: 1, lastError: null })
-					.where(eq(t.accounts.id, id));
-			} else {
-				await db.insert(t.accounts).values({
-					id,
-					bindingId: b.id,
-					instanceId: b.instanceId,
-					remoteUuid: res.uuid,
-					...sealed,
-					state: 'active'
-				});
+			const existing = acc;
+			const stored = await db.transaction(async (tx) => {
+				// revoked while the create was in flight: do not keep the new config
+				if (!(await lockEnabledPerson(tx, personId))) return false;
+				if (existing) {
+					await tx
+						.update(t.accounts)
+						.set({ remoteUuid: res.uuid, ...sealed, keyVersion: 1, lastError: null })
+						.where(eq(t.accounts.id, id));
+				} else {
+					await tx.insert(t.accounts).values({
+						id,
+						bindingId: b.id,
+						instanceId: b.instanceId,
+						remoteUuid: res.uuid,
+						...sealed,
+						state: 'active'
+					});
+				}
+				return true;
+			});
+			if (!stored) {
+				await discardCreated(kind, res.uuid, res.password, null);
+				throw new PermanentJobError('person was disabled during the push');
 			}
 			[acc] = await db.select().from(t.accounts).where(eq(t.accounts.id, id));
 		} else {
@@ -269,49 +318,78 @@ async function runCheck(job: Job, ctx: JobContext): Promise<string> {
 const rotate: Handler = async (job, ctx) => {
 	const { personId, kind } = requireTarget(job);
 	const { b, person, r } = await loadRendered(personId, kind);
+	// a rotate queued before a revoke must not re-create the person's config
+	if (person.disabled) throw new PermanentJobError('person is disabled');
 	const scrub = r.secretValues();
 	assertRenderable(r);
 	const adapter = getAdapter(kind);
 	try {
+		// a rotation interrupted by a crash/restart left a live copy behind: remove it
+		const leftovers = await db
+			.select()
+			.from(t.accounts)
+			.where(and(eq(t.accounts.bindingId, b.id), eq(t.accounts.state, 'rotating')));
+		for (const l of leftovers) {
+			let password: string | null = null;
+			try {
+				password = openAccount(l).password;
+			} catch {
+				// undecryptable: the delete below may still work for admin-key deletes
+			}
+			await discardCreated(kind, l.remoteUuid, password, l.id);
+		}
 		const old = await activeAccount(b.id);
 		await ctx.progress('creating new upstream config');
 		const res = await adapter.create(r.resolved);
 		const id = crypto.randomUUID();
-		await db.insert(t.accounts).values({
-			id,
-			bindingId: b.id,
-			instanceId: b.instanceId,
-			remoteUuid: res.uuid,
-			...sealAccountCreds(id, {
-				password: res.password,
-				manifestSecret: res.manifestSecret ?? null,
-				manifestUrl: res.manifestUrl
-			}),
-			state: 'rotating'
-		});
-		await ctx.progress('verifying');
-		const readBack = await adapter.read(res.uuid, res.password);
-		await db.transaction(async (tx) => {
-			if (old) {
-				await tx
+		try {
+			await db.insert(t.accounts).values({
+				id,
+				bindingId: b.id,
+				instanceId: b.instanceId,
+				remoteUuid: res.uuid,
+				...sealAccountCreds(id, {
+					password: res.password,
+					manifestSecret: res.manifestSecret ?? null,
+					manifestUrl: res.manifestUrl
+				}),
+				state: 'rotating'
+			});
+			await ctx.progress('verifying');
+			const readBack = await adapter.read(res.uuid, res.password);
+			const activated = await db.transaction(async (tx) => {
+				if (!(await lockEnabledPerson(tx, personId))) return false;
+				// only a row still 'rotating' may become active (a revoke retires it)
+				const [row] = await tx
 					.update(t.accounts)
-					.set({ state: 'retired', retiredAt: new Date() })
-					.where(eq(t.accounts.id, old.id));
-			}
-			await tx
-				.update(t.accounts)
-				.set({
-					state: 'active',
-					desiredHash: r.desiredHash,
-					pushedHash: r.desiredHash,
-					remoteHash: configHash(kind, readBack),
-					renderedFromVersionId: r.version.id,
-					lastPushAt: new Date(),
-					lastCheckAt: new Date(),
-					checkStatus: 'ok'
-				})
-				.where(eq(t.accounts.id, id));
-		});
+					.set({
+						state: 'active',
+						desiredHash: r.desiredHash,
+						pushedHash: r.desiredHash,
+						remoteHash: configHash(kind, readBack),
+						renderedFromVersionId: r.version.id,
+						lastPushAt: new Date(),
+						lastCheckAt: new Date(),
+						checkStatus: 'ok'
+					})
+					.where(and(eq(t.accounts.id, id), eq(t.accounts.state, 'rotating')))
+					.returning({ id: t.accounts.id });
+				if (!row) return false;
+				if (old) {
+					await tx
+						.update(t.accounts)
+						.set({ state: 'retired', retiredAt: new Date() })
+						.where(eq(t.accounts.id, old.id));
+				}
+				return true;
+			});
+			if (!activated) throw new PermanentJobError('person was revoked during the rotation');
+		} catch (e) {
+			// never leave a half-rotated copy (with the person's keys) live upstream;
+			// a retry starts from a clean slate
+			await discardCreated(kind, res.uuid, res.password, id);
+			throw e;
+		}
 		let deleteNote = '';
 		if (old?.remoteUuid) {
 			await ctx.progress('deleting old upstream config');

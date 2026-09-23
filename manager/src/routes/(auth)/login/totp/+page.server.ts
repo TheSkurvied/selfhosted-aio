@@ -5,11 +5,10 @@ import {
 	clearFailures,
 	clearPendingLogin,
 	clientIp,
-	isRateLimited,
 	loginBucket,
 	readPendingLogin,
-	recordFailure,
 	requestMeta,
+	reserveAttempt,
 	startSession,
 	totpBucket,
 	verifySecondFactor
@@ -30,12 +29,13 @@ export const actions: Actions = {
 		const code = String((await event.request.formData()).get('code') ?? '');
 		const ip = clientIp(event);
 		const bucket = totpBucket(adminId, ip);
-		if (await isRateLimited(bucket))
+		// check and record in one step, so a parallel burst cannot bypass the limit
+		if (!(await reserveAttempt(bucket)).allowed)
 			return fail(429, { error: 'Too many failed attempts. Try again in 15 minutes.' });
 
 		const factor = code.trim() ? await verifySecondFactor(adminId, code) : null;
 		if (!factor) {
-			await recordFailure(bucket);
+			// the reserved attempt stays recorded as the failure
 			await audit({
 				actor: adminId,
 				action: 'auth.login_failed',
