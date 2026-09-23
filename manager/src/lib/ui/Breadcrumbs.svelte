@@ -15,6 +15,7 @@
 			{@const last = i === items.length - 1}
 			<li class:last>
 				{#if item.href && !last}
+					<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- consumers pass app paths -->
 					<a class="crumb" href={item.href}>
 						{#if item.icon}<Icon name={item.icon} size={16} />{/if}
 						<span>{item.label}</span>

@@ -17,10 +17,7 @@ export const iconPaths = {
 		'<path d="M12.5 4.4a2.75 2.75 0 0 1 0 5.2"/>',
 		'<path d="M14.5 12.2c1.8.5 3 2.1 3 4.3"/>'
 	],
-	person: [
-		'<circle cx="10" cy="7" r="3"/>',
-		'<path d="M4 17c0-3 2.7-5 6-5s6 2 6 5"/>'
-	],
+	person: ['<circle cx="10" cy="7" r="3"/>', '<path d="M4 17c0-3 2.7-5 6-5s6 2 6 5"/>'],
 	template: [
 		'<path d="M5 2.75h6.5L15.25 6.5V17a.25.25 0 0 1-.25.25H5A.25.25 0 0 1 4.75 17V3A.25.25 0 0 1 5 2.75Z"/>',
 		'<path d="M11.25 2.75V6.75h4"/>',
@@ -117,10 +114,7 @@ export const iconPaths = {
 		'<path d="M8 3.5H4.5a1 1 0 0 0-1 1v11a1 1 0 0 0 1 1H8"/>',
 		'<path d="M12.5 6.5 16 10l-3.5 3.5M16 10H7.5"/>'
 	],
-	'sidebar-collapse': [
-		'<path d="m10 6-4 4 4 4"/>',
-		'<path d="m15 6-4 4 4 4"/>'
-	],
+	'sidebar-collapse': ['<path d="m10 6-4 4 4 4"/>', '<path d="m15 6-4 4 4 4"/>'],
 	'sidebar-expand': ['<path d="m10 6 4 4-4 4"/>', '<path d="m5 6 4 4-4 4"/>'],
 	menu: ['<path d="M3.5 5.5h13M3.5 10h13M3.5 14.5h13"/>'],
 	lock: [
@@ -131,8 +125,14 @@ export const iconPaths = {
 		'<path d="M8.5 11.5a3 3 0 0 0 4.3.2l2.5-2.5a3 3 0 0 0-4.3-4.3L10 5.9"/>',
 		'<path d="M11.5 8.5a3 3 0 0 0-4.3-.2l-2.5 2.5a3 3 0 0 0 4.3 4.3l1-1"/>'
 	],
-	upload: ['<path d="M10 13V3.5M6 7.5l4-4 4 4"/>', '<path d="M3.5 13v2.5a1 1 0 0 0 1 1h11a1 1 0 0 0 1-1V13"/>'],
-	download: ['<path d="M10 3.5V13M6 9l4 4 4-4"/>', '<path d="M3.5 13v2.5a1 1 0 0 0 1 1h11a1 1 0 0 0 1-1V13"/>'],
+	upload: [
+		'<path d="M10 13V3.5M6 7.5l4-4 4 4"/>',
+		'<path d="M3.5 13v2.5a1 1 0 0 0 1 1h11a1 1 0 0 0 1-1V13"/>'
+	],
+	download: [
+		'<path d="M10 3.5V13M6 9l4 4 4-4"/>',
+		'<path d="M3.5 13v2.5a1 1 0 0 0 1 1h11a1 1 0 0 0 1-1V13"/>'
+	],
 	filter: ['<path d="M3 5h14M5.5 10h9M8 15h4"/>'],
 	clock: ['<circle cx="10" cy="10" r="7"/>', '<path d="M10 6v4l2.75 1.75"/>'],
 	eye: [
@@ -161,11 +161,11 @@ export const iconPaths = {
 		'<circle cx="6.5" cy="6.5" r="1"/>'
 	],
 	code: ['<path d="m7 6-4 4 4 4M13 6l4 4-4 4"/>'],
-	pin: [
-		'<path d="M7.5 3h5M8.5 3v5L6 11h8l-2.5-3V3"/>',
-		'<path d="M10 11v6"/>'
+	pin: ['<path d="M7.5 3h5M8.5 3v5L6 11h8l-2.5-3V3"/>', '<path d="M10 11v6"/>'],
+	mail: [
+		'<rect x="2.5" y="4.5" width="15" height="11" rx="1.5"/>',
+		'<path d="m3 5.5 7 5.5 7-5.5"/>'
 	],
-	mail: ['<rect x="2.5" y="4.5" width="15" height="11" rx="1.5"/>', '<path d="m3 5.5 7 5.5 7-5.5"/>'],
 	database: [
 		'<ellipse cx="10" cy="5" rx="6" ry="2.25"/>',
 		'<path d="M4 5v10c0 1.25 2.7 2.25 6 2.25s6-1 6-2.25V5"/>',
@@ -189,9 +189,7 @@ export const iconPaths = {
 		'<path d="M7.5 5.5h9M7.5 10h9M7.5 14.5h9"/>',
 		'<path d="M3.75 5.5h.01M3.75 10h.01M3.75 14.5h.01" stroke-width="2"/>'
 	],
-	'circle-dashed': [
-		'<circle cx="10" cy="10" r="6.5" stroke-dasharray="2.4 2.2"/>'
-	]
+	'circle-dashed': ['<circle cx="10" cy="10" r="6.5" stroke-dasharray="2.4 2.2"/>']
 } as const satisfies Record<string, readonly string[]>;
 
 export type IconName = keyof typeof iconPaths;

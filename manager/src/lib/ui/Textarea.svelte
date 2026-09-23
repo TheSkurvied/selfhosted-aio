@@ -51,8 +51,7 @@
 		class:invalid={!!error}
 		aria-invalid={error ? 'true' : undefined}
 		aria-describedby={error ? `${taId}-error` : hint ? `${taId}-hint` : undefined}
-		{...rest}
-	></textarea>
+		{...rest}></textarea>
 </Field>
 
 <style>

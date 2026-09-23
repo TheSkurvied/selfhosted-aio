@@ -50,7 +50,11 @@
 	}
 
 	function itemEls(): HTMLElement[] {
-		return popup ? Array.from(popup.querySelectorAll<HTMLElement>('[role="menuitem"]:not([aria-disabled="true"])')) : [];
+		return popup
+			? Array.from(
+					popup.querySelectorAll<HTMLElement>('[role="menuitem"]:not([aria-disabled="true"])')
+				)
+			: [];
 	}
 
 	function place() {
@@ -160,7 +164,14 @@
 	{#if trigger}
 		{@render trigger(triggerProps)}
 	{:else}
-		<button type="button" class="dots" class:active={open} aria-label={label} title={label} {...triggerProps}>
+		<button
+			type="button"
+			class="dots"
+			class:active={open}
+			aria-label={label}
+			title={label}
+			{...triggerProps}
+		>
 			<Icon name={icon} size={18} />
 		</button>
 	{/if}

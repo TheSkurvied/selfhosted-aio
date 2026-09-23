@@ -24,9 +24,13 @@
 		onclick={() => (open = !open)}
 	>
 		<span class="caret" aria-hidden="true">
-			<svg width="10" height="10" viewBox="0 0 10 10"><path d="M3 1.5v7l5-3.5Z" fill="currentColor" /></svg>
+			<svg width="10" height="10" viewBox="0 0 10 10"
+				><path d="M3 1.5v7l5-3.5Z" fill="currentColor" /></svg
+			>
 		</span>
-		<span class="label">{#if summary}{@render summary()}{:else}{title}{/if}</span>
+		<span class="label"
+			>{#if summary}{@render summary()}{:else}{title}{/if}</span
+		>
 	</button>
 	{#if open}
 		<div class="content" id="tb-{uid}">{@render children()}</div>

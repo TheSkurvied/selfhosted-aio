@@ -54,6 +54,7 @@
 {/snippet}
 
 {#if href && !disabled}
+	<!-- eslint-disable svelte/no-navigation-without-resolve -- consumers pass app paths -->
 	<a
 		{href}
 		{target}
@@ -65,6 +66,7 @@
 	>
 		{@render inner()}
 	</a>
+	<!-- eslint-enable svelte/no-navigation-without-resolve -->
 {:else}
 	<button
 		{type}

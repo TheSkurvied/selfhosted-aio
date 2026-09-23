@@ -17,7 +17,8 @@
 </script>
 
 <div class="empty" class:compact>
-	{#if icon}<span class="ic"><Icon name={icon} size={compact ? 24 : 32} strokeWidth={1.25} /></span>{/if}
+	{#if icon}<span class="ic"><Icon name={icon} size={compact ? 24 : 32} strokeWidth={1.25} /></span
+		>{/if}
 	<p class="title">{title}</p>
 	{#if description}<p class="desc">{description}</p>{/if}
 	{#if action}<div class="action">{@render action()}</div>{/if}

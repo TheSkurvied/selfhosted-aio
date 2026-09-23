@@ -57,6 +57,7 @@
 		line-height: 20px;
 		cursor: pointer;
 		user-select: none;
+		vertical-align: middle;
 	}
 	.box-wrap {
 		position: relative;

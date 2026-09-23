@@ -65,11 +65,7 @@
 {#if open}
 	<div class="overlay" role="presentation">
 		<!-- Backdrop click target (keyboard users close with Esc or the close button). -->
-		<div
-			class="backdrop"
-			role="presentation"
-			onclick={() => dismissible && close()}
-		></div>
+		<div class="backdrop" role="presentation" onclick={() => dismissible && close()}></div>
 		<div
 			class="panel {size}"
 			role="dialog"

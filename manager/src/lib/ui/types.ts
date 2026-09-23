@@ -2,25 +2,10 @@ import type { IconName } from '$lib/icons/paths';
 
 /** Mirrors the engine's SyncStatus (kept here so UI code never imports server modules). */
 export type SyncStatus =
-	| 'in_sync'
-	| 'pending'
-	| 'drifted'
-	| 'missing'
-	| 'error'
-	| 'unbound'
-	| 'never_pushed';
+	'in_sync' | 'pending' | 'drifted' | 'missing' | 'error' | 'unbound' | 'never_pushed';
 
 export type TagColor =
-	| 'default'
-	| 'gray'
-	| 'brown'
-	| 'orange'
-	| 'yellow'
-	| 'green'
-	| 'blue'
-	| 'purple'
-	| 'pink'
-	| 'red';
+	'default' | 'gray' | 'brown' | 'orange' | 'yellow' | 'green' | 'blue' | 'purple' | 'pink' | 'red';
 
 export const TAG_COLORS: TagColor[] = [
 	'gray',

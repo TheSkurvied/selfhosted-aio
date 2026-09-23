@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import { resolve } from '$app/paths';
 	import Button from '$lib/ui/Button.svelte';
 	import Input from '$lib/ui/Input.svelte';
 	import Callout from '$lib/ui/Callout.svelte';
@@ -78,7 +79,7 @@
 	<button type="button" class="link" onclick={() => (useRecovery = !useRecovery)}>
 		{useRecovery ? 'Use your authenticator app' : 'Use a recovery code instead'}
 	</button>
-	<a class="link" href="/login">Back to log in</a>
+	<a class="link" href={resolve('/login')}>Back to log in</a>
 </div>
 
 <style>

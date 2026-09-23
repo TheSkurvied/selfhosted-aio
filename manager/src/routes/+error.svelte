@@ -24,7 +24,9 @@
 
 <div class="err">
 	<div class="inner">
-		<span class="ic"><Icon name={status === 404 ? 'file' : 'alert'} size={40} strokeWidth={1.25} /></span>
+		<span class="ic"
+			><Icon name={status === 404 ? 'file' : 'alert'} size={40} strokeWidth={1.25} /></span
+		>
 		<p class="code">Error {status}</p>
 		<h1>{heading}</h1>
 		<p class="detail">{detail}</p>

@@ -77,8 +77,17 @@ if (only === 'all' || only === 'app') {
 		const page = await ctx.newPage();
 		await page.goto(BASE + '/styleguide');
 		await page.waitForSelector('.tbl');
+		await page.waitForLoadState('networkidle');
 		await shot(page, `styleguide-${v.name}`, true);
 		await shot(page, `styleguide-top-${v.name}`, false);
+		for (const id of ['buttons', 'forms', 'tags', 'blocks', 'table', 'editing', 'overlays', 'nav']) {
+			const box = await page.evaluate((id) => {
+				const r = document.getElementById(id).getBoundingClientRect();
+				return { x: 0, y: r.top + scrollY, width: innerWidth, height: r.height };
+			}, id);
+			await page.screenshot({ path: `${OUT}.sec-${id}-${v.name}.png`, fullPage: true, clip: box });
+		}
+		await page.evaluate(() => window.scrollTo(0, 0));
 		if (v.isMobile) {
 			await page.click('button[aria-label="Open sidebar"]');
 			await shot(page, `sidebar-open-${v.name}`, false);
@@ -94,7 +103,9 @@ if (only === 'all' || only === 'app') {
 			await page.getByRole('button', { name: 'Success toast' }).click();
 			await shot(page, `toast-${v.name}`, false);
 			await page.goto(BASE + '/styleguide');
-			await page.click('button[aria-label="Close sidebar"]');
+			await page.waitForLoadState('networkidle');
+			await page.hover('.sb');
+			await page.click('.sb button[aria-label="Close sidebar"]');
 			await shot(page, `collapsed-${v.name}`, false);
 			await page.click('button[aria-label="Open sidebar"]');
 		}

@@ -6,7 +6,7 @@
 		if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
 		if (localStorage.getItem('aio-sidebar') === 'collapsed')
 			document.documentElement.setAttribute('data-sidebar', 'collapsed');
-	} catch (e) {
+	} catch {
 		/* storage unavailable: fall back to the OS preference */
 	}
 })();

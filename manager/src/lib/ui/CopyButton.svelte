@@ -28,7 +28,7 @@
 	let timer: ReturnType<typeof setTimeout> | undefined;
 
 	async function copy() {
-		let ok = false;
+		let ok: boolean;
 		try {
 			await navigator.clipboard.writeText(value);
 			ok = true;

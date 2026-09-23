@@ -33,7 +33,9 @@
 <span class="tag {color} {size}" class:has-dot={dot} {title}>
 	{#if dot}<span class="dot" aria-hidden="true"></span>{/if}
 	{#if icon}<Icon name={icon} size={12} />{/if}
-	<span class="text">{#if children}{@render children()}{:else}{label}{/if}</span>
+	<span class="text"
+		>{#if children}{@render children()}{:else}{label}{/if}</span
+	>
 	{#if onremove}
 		<button type="button" class="rm" aria-label="Remove {label ?? ''}" onclick={onremove}>
 			<Icon name="x" size={10} strokeWidth={2} />

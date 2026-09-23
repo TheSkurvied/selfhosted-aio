@@ -27,7 +27,10 @@ export function getPageChrome(): PageChromeState | undefined {
  *
  *   usePageChrome({ crumbs: () => [{ label: 'People', href: '/people' }, { label: person.displayName }], actions });
  */
-export function usePageChrome(opts: { crumbs?: () => Crumb[] | null; actions?: () => Snippet | null | undefined }) {
+export function usePageChrome(opts: {
+	crumbs?: () => Crumb[] | null;
+	actions?: () => Snippet | null | undefined;
+}) {
 	const chrome = getPageChrome();
 	if (!chrome) return;
 	const id = ++ownerSeq;

@@ -1,10 +1,11 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	let { children } = $props();
 </script>
 
 <div class="auth">
 	<header class="top">
-		<a class="brand" href="/login">
+		<a class="brand" href={resolve('/login')}>
 			<span class="mark" aria-hidden="true">A</span>
 			<span>AIO Manager</span>
 		</a>

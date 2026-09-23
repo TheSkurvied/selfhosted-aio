@@ -1,0 +1,25 @@
+{
+  "cookies": [
+    {
+      "name": "aio_setup_done",
+      "value": "1",
+      "domain": "localhost",
+      "path": "/setup",
+      "expires": 1790187497.055703,
+      "httpOnly": true,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "aio_session",
+      "value": "ZbGGUrk-1-ps0zXcJWLRpUsvciSzYAoNysZ8E0BSksU",
+      "domain": "localhost",
+      "path": "/",
+      "expires": 1790230097.055658,
+      "httpOnly": true,
+      "secure": false,
+      "sameSite": "Lax"
+    }
+  ],
+  "origins": []
+}

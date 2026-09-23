@@ -31,7 +31,8 @@
 		readonly = false,
 		minLines = 8,
 		maxHeight = 560,
-		valid = $bindable(true),
+		// eslint-disable-next-line no-useless-assignment -- bindable output, set by the effect below
+		valid = $bindable(),
 		error,
 		oninput,
 		id
@@ -46,6 +47,7 @@
 	const PAD = 12;
 
 	const lineCount = $derived(Math.max(1, value.split('\n').length));
+	const lineNumbers = $derived(Array.from({ length: lineCount }, (_, i) => i + 1));
 	const visibleLines = $derived(Math.max(minLines, lineCount));
 	const height = $derived(Math.min(maxHeight, visibleLines * LINE + PAD * 2));
 
@@ -60,7 +62,11 @@
 			const m = /position (\d+)/.exec(msg);
 			const line = m ? value.slice(0, Number(m[1])).split('\n').length : undefined;
 			const lm = /line (\d+)/.exec(msg);
-			return { ok: false, message: msg.replace(/^JSON\.parse: /, ''), line: line ?? (lm ? Number(lm[1]) : undefined) };
+			return {
+				ok: false,
+				message: msg.replace(/^JSON\.parse: /, ''),
+				line: line ?? (lm ? Number(lm[1]) : undefined)
+			};
 		}
 	});
 
@@ -97,7 +103,10 @@
 				const out = block.replace(/^ {1,2}/gm, '');
 				if (out !== block) {
 					insert(out, lineStart, end);
-					ta.setSelectionRange(Math.max(lineStart, s - 2), Math.max(lineStart, en - (block.length - out.length)));
+					ta.setSelectionRange(
+						Math.max(lineStart, s - 2),
+						Math.max(lineStart, en - (block.length - out.length))
+					);
 				}
 			} else if (s !== en && value.slice(s, en).includes('\n')) {
 				const block = value.slice(lineStart, en);
@@ -142,8 +151,8 @@
 	<div class="ce" class:invalid={language === 'json' && (!parse.ok || !!error)} class:readonly>
 		<div class="gutter" bind:this={gutter} aria-hidden="true" style:height="{height}px">
 			<div class="nums" style:padding="{PAD}px 0">
-				{#each { length: lineCount } as _, i (i)}
-					<div class:err={parse.line === i + 1}>{i + 1}</div>
+				{#each lineNumbers as n (n)}
+					<div class:err={parse.line === n}>{n}</div>
 				{/each}
 			</div>
 		</div>
@@ -164,8 +173,7 @@
 			aria-describedby="{edId}-status"
 			onscroll={syncScroll}
 			{onkeydown}
-			oninput={handleInput}
-		></textarea>
+			oninput={handleInput}></textarea>
 	</div>
 	{#if language === 'json'}
 		<div class="status" id="{edId}-status" aria-live="polite">

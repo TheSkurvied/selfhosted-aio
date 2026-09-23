@@ -67,7 +67,11 @@
 
 <ol class="steps" aria-label="Setup progress">
 	{#each ['Account', 'Authenticator', 'Recovery codes'] as label, i (label)}
-		<li class:done={i < stepIndex} class:current={i === stepIndex} aria-current={i === stepIndex ? 'step' : undefined}>
+		<li
+			class:done={i < stepIndex}
+			class:current={i === stepIndex}
+			aria-current={i === stepIndex ? 'step' : undefined}
+		>
 			<span class="num">{i + 1}</span>{label}
 		</li>
 	{/each}
@@ -114,8 +118,8 @@
 	<div class="auth-head">
 		<h1 class="auth-title">Set up two-factor authentication</h1>
 		<p class="auth-sub">
-			Scan this QR code with an authenticator app such as 1Password, Aegis or Google
-			Authenticator, then enter the 6-digit code it shows.
+			Scan this QR code with an authenticator app such as 1Password, Aegis or Google Authenticator,
+			then enter the 6-digit code it shows.
 		</p>
 	</div>
 	<div class="qr-block">
@@ -124,7 +128,11 @@
 	<ToggleBlock title="Can't scan? Enter the key manually">
 		<div class="secret">
 			<code class="secret-text">{groupedSecret}</code>
-			<CopyButton value={lastTotp.totpSecret} ariaLabel="Copy setup key" copiedMessage="Setup key copied" />
+			<CopyButton
+				value={lastTotp.totpSecret}
+				ariaLabel="Copy setup key"
+				copiedMessage="Setup key copied"
+			/>
 		</div>
 		<p class="secret-hint">Time-based, 6 digits, 30 seconds.</p>
 	</ToggleBlock>
@@ -142,14 +150,16 @@
 			required
 			size="lg"
 		/>
-		<Button type="submit" variant="primary" size="lg" block loading={pending}>Verify and finish</Button>
+		<Button type="submit" variant="primary" size="lg" block loading={pending}
+			>Verify and finish</Button
+		>
 	</form>
 {:else if step === 'codes' && recoveryCodes}
 	<div class="auth-head">
 		<h1 class="auth-title">Save your recovery codes</h1>
 		<p class="auth-sub">
-			If you lose your authenticator, each of these codes signs you in once. They will not be
-			shown again.
+			If you lose your authenticator, each of these codes signs you in once. They will not be shown
+			again.
 		</p>
 	</div>
 	<div class="codes">
@@ -157,7 +167,12 @@
 			{#each recoveryCodes as code (code)}<li>{code}</li>{/each}
 		</ul>
 		<div class="codes-actions">
-			<CopyButton value={recoveryCodes.join('\n')} label="Copy" size="sm" copiedMessage="Recovery codes copied" />
+			<CopyButton
+				value={recoveryCodes.join('\n')}
+				label="Copy"
+				size="sm"
+				copiedMessage="Recovery codes copied"
+			/>
 			<Button size="sm" icon="download" onclick={download}>Download</Button>
 		</div>
 	</div>
@@ -236,7 +251,7 @@
 		font-family: var(--font-mono);
 		font-size: 13px;
 		letter-spacing: 0.04em;
-		word-break: break-all;
+		overflow-wrap: anywhere;
 		color: var(--text);
 		background: none;
 		padding: 0;

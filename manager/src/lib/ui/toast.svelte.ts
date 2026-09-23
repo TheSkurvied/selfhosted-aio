@@ -15,7 +15,7 @@ export interface ToastOptions {
 }
 
 let nextId = 1;
-const timers = new Map<number, ReturnType<typeof setTimeout>>();
+const timers: Record<number, ReturnType<typeof setTimeout>> = {};
 
 class ToastStore {
 	items = $state<ToastItem[]>([]);
@@ -25,13 +25,13 @@ class ToastStore {
 		const kind = opts.kind ?? 'info';
 		this.items = [...this.items.slice(-3), { id, message, kind, action: opts.action }];
 		const duration = opts.duration ?? (kind === 'error' ? 6000 : 4000);
-		if (duration > 0) timers.set(id, setTimeout(() => this.dismiss(id), duration));
+		if (duration > 0) timers[id] = setTimeout(() => this.dismiss(id), duration);
 		return id;
 	}
 
 	dismiss(id: number) {
-		clearTimeout(timers.get(id));
-		timers.delete(id);
+		clearTimeout(timers[id]);
+		delete timers[id];
 		this.items = this.items.filter((t) => t.id !== id);
 	}
 }

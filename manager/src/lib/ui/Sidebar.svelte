@@ -30,12 +30,19 @@
 
 <aside class="sb" {id} aria-label="Sidebar">
 	<div class="head">
+		<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- consumers pass app paths -->
 		<a class="ws" href="/">
 			<span class="mark" aria-hidden="true">{mark}</span>
 			<span class="name">{workspace}</span>
 		</a>
 		{#if oncollapse}
-			<button type="button" class="collapse" aria-label={collapseLabel} title={collapseLabel} onclick={oncollapse}>
+			<button
+				type="button"
+				class="collapse"
+				aria-label={collapseLabel}
+				title={collapseLabel}
+				onclick={oncollapse}
+			>
 				<Icon name="sidebar-collapse" size={18} />
 			</button>
 		{/if}

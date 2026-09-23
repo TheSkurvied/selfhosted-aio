@@ -55,11 +55,51 @@
 	}
 
 	const people: PersonRow[] = [
-		{ id: 'p1', name: 'Grandma', tags: ['family'], streams: 'Family v7', metadata: 'Family v3', status: 'in_sync', updated: 'Sep 20, 2026' },
-		{ id: 'p2', name: 'Sam', tags: ['anime'], streams: 'Anime fan v2', metadata: 'Anime fan v4', status: 'pending', updated: 'Sep 21, 2026' },
-		{ id: 'p3', name: 'Uncle Joe', tags: ['family', 'tv'], streams: 'Family v6 (pinned)', metadata: 'Family v3', status: 'drifted', updated: 'Sep 12, 2026' },
-		{ id: 'p4', name: 'Old laptop', tags: [], streams: '', metadata: 'Family v3', status: 'missing', updated: 'Aug 30, 2026' },
-		{ id: 'p5', name: 'Living room TV', tags: ['device'], streams: 'Family v7', metadata: '', status: 'never_pushed', updated: 'Sep 22, 2026' }
+		{
+			id: 'p1',
+			name: 'Grandma',
+			tags: ['family'],
+			streams: 'Family v7',
+			metadata: 'Family v3',
+			status: 'in_sync',
+			updated: 'Sep 20, 2026'
+		},
+		{
+			id: 'p2',
+			name: 'Sam',
+			tags: ['anime'],
+			streams: 'Anime fan v2',
+			metadata: 'Anime fan v4',
+			status: 'pending',
+			updated: 'Sep 21, 2026'
+		},
+		{
+			id: 'p3',
+			name: 'Uncle Joe',
+			tags: ['family', 'tv'],
+			streams: 'Family v6 (pinned)',
+			metadata: 'Family v3',
+			status: 'drifted',
+			updated: 'Sep 12, 2026'
+		},
+		{
+			id: 'p4',
+			name: 'Old laptop',
+			tags: [],
+			streams: '',
+			metadata: 'Family v3',
+			status: 'missing',
+			updated: 'Aug 30, 2026'
+		},
+		{
+			id: 'p5',
+			name: 'Living room TV',
+			tags: ['device'],
+			streams: 'Family v7',
+			metadata: '',
+			status: 'never_pushed',
+			updated: 'Sep 22, 2026'
+		}
 	];
 
 	const columns: TableColumn[] = [
@@ -128,9 +168,17 @@
 	] as const;
 </script>
 
-<PageChrome title="Style guide" crumbs={[{ label: 'Settings', href: '/settings', icon: 'settings' }, { label: 'Style guide' }]}>
+<PageChrome
+	title="Style guide"
+	crumbs={[{ label: 'Settings', href: '/settings', icon: 'settings' }, { label: 'Style guide' }]}
+>
 	{#snippet actions()}
-		<Button variant="ghost" size="sm" onclick={() => theme.toggle()} icon={theme.resolved === 'dark' ? 'sun' : 'moon'}>
+		<Button
+			variant="ghost"
+			size="sm"
+			onclick={() => theme.toggle()}
+			icon={theme.resolved === 'dark' ? 'sun' : 'moon'}
+		>
 			{theme.resolved === 'dark' ? 'Light' : 'Dark'}
 		</Button>
 		<Button variant="ghost" size="sm" icon="share">Share</Button>
@@ -197,8 +245,16 @@
 				<h1>Page title 40</h1>
 				<h2>Heading 2, 24 semibold</h2>
 				<h3>Heading 3, 18 semibold</h3>
-				<p>Body 16/1.5. The manager keeps configs in sync with <a href="#foundations">upstream instances</a> and never shows raw keys. Inline <code>code</code> looks like this.</p>
-				<p class="small muted">Secondary 14 &middot; <span class="faint">Tertiary text</span> &middot; <span class="mono">mono 3f2c...a91</span></p>
+				<p>
+					Body 16/1.5. The manager keeps configs in sync with <a href="#foundations"
+						>upstream instances</a
+					>
+					and never shows raw keys. Inline <code>code</code> looks like this.
+				</p>
+				<p class="small muted">
+					Secondary 14 &middot; <span class="faint">Tertiary text</span> &middot;
+					<span class="mono">mono 3f2c...a91</span>
+				</p>
 			</div>
 			<div class="swatches">
 				{#each [['--text', 'Text'], ['--text-secondary', 'Secondary'], ['--text-tertiary', 'Tertiary'], ['--bg', 'Page'], ['--bg-sidebar', 'Sidebar'], ['--bg-hover', 'Hover'], ['--bg-pressed', 'Pressed'], ['--divider', 'Divider'], ['--border-input', 'Input border'], ['--accent', 'Accent'], ['--danger', 'Danger']] as [v, label] (v)}
@@ -248,9 +304,19 @@
 		<section class="section" id="forms">
 			<h2>Form controls</h2>
 			<div class="demo grid2">
-				<Input label="Display name" placeholder="e.g. Grandma" bind:value={text} hint="Shown on the share page." />
+				<Input
+					label="Display name"
+					placeholder="e.g. Grandma"
+					bind:value={text}
+					hint="Shown on the share page."
+				/>
 				<Input label="Search" icon="search" placeholder="Search people" size="sm" />
-				<Input label="Email" type="email" value="not-an-email" error="Enter a valid email address." />
+				<Input
+					label="Email"
+					type="email"
+					value="not-an-email"
+					error="Enter a valid email address."
+				/>
 				<Input label="Remote uuid" value="3f2c8e1a-0b7d" mono disabled />
 				<Select
 					label="Version"
@@ -261,13 +327,22 @@
 						{ value: 'v5', label: 'v5' }
 					]}
 				/>
-				<Select label="Template" placeholder="Choose a template" options={['Family', 'Anime fan', 'Minimal']} value="" />
+				<Select
+					label="Template"
+					placeholder="Choose a template"
+					options={['Family', 'Anime fan', 'Minimal']}
+					value=""
+				/>
 				<div class="full">
 					<Textarea label="Notes" placeholder="Anything to remember about this person" rows={2} />
 				</div>
 				<div class="stack">
 					<Checkbox bind:checked={cbA} label="Delete upstream config too" />
-					<Checkbox bind:checked={cbB} label="Pin to this version" description="Future template versions will not be pushed." />
+					<Checkbox
+						bind:checked={cbB}
+						label="Pin to this version"
+						description="Future template versions will not be pushed."
+					/>
 					<Checkbox indeterminate label="Indeterminate" />
 					<Checkbox disabled label="Disabled" />
 				</div>
@@ -306,12 +381,16 @@
 				<Callout color="gray">
 					Install Metadata first, then Streams, and remove Cinemeta if Stremio asks.
 				</Callout>
-				<Callout color="blue" title="Dry run">12 people will change when you push version 8.</Callout>
+				<Callout color="blue" title="Dry run"
+					>12 people will change when you push version 8.</Callout
+				>
 				<Callout color="yellow" title="Missing secrets">
 					Sam has no value for <code>rd_key</code> and there is no shared fallback.
 					{#snippet actions()}<Button size="sm">Add secret</Button>{/snippet}
 				</Callout>
-				<Callout color="red" title="Push failed">Upstream returned 502 Bad Gateway after 3 attempts.</Callout>
+				<Callout color="red" title="Push failed"
+					>Upstream returned 502 Bad Gateway after 3 attempts.</Callout
+				>
 				<Callout color="green">All 21 configs are in sync.</Callout>
 
 				<ToggleBlock title="AIOStreams" bind:open={blockOpen} heading>
@@ -373,7 +452,14 @@
 				<Button size="sm" variant="ghost" icon="tag">Tag</Button>
 			</div>
 		{/if}
-		<Table {columns} rows={people} rowKey={(r) => r.id} selectable bind:selected rowHref={(r) => `#${r.id}`}>
+		<Table
+			{columns}
+			rows={people}
+			rowKey={(r) => r.id}
+			selectable
+			bind:selected
+			rowHref={(r) => `#${r.id}`}
+		>
 			{#snippet cell(row, col)}
 				{#if col.key === 'name'}
 					<Icon name="person" size={16} class="row-ic" />{row.name}
@@ -397,7 +483,12 @@
 		<h3 class="sub">Empty table</h3>
 		<Table columns={columns.slice(0, 3)} rows={[]}>
 			{#snippet empty()}
-				<EmptyState compact icon="search" title="No matches" description="Try a different search." />
+				<EmptyState
+					compact
+					icon="search"
+					title="No matches"
+					description="Try a different search."
+				/>
 			{/snippet}
 		</Table>
 	</section>
@@ -428,8 +519,9 @@
 					<Button onclick={() => toast.success('Pushed Sam / AIOStreams')}>Success toast</Button>
 					<Button
 						onclick={() =>
-							toast.error('Upstream returned 502', { action: { label: 'Retry', onclick: () => toast('Retrying') } })}
-						>Error toast</Button
+							toast.error('Upstream returned 502', {
+								action: { label: 'Retry', onclick: () => toast('Retrying') }
+							})}>Error toast</Button
 					>
 				</div>
 				<div class="row">
@@ -449,11 +541,7 @@
 					/>
 					<Menu
 						align="start"
-						items={[
-							{ label: 'Latest', checked: true },
-							{ label: 'v6' },
-							{ label: 'v5' }
-						]}
+						items={[{ label: 'Latest', checked: true }, { label: 'v6' }, { label: 'v5' }]}
 					>
 						{#snippet trigger(props)}
 							<button type="button" class="custom-trigger" {...props}>
@@ -491,10 +579,16 @@
 				<div class="row" style:align-items="flex-start" style:gap="24px">
 					<QrCode svg={qrSvg} size={140} label="Example QR code" />
 					<div class="stack" style:--stack-gap="8px">
-						<p class="small">QR codes always render dark on white so phones can scan them in dark mode.</p>
+						<p class="small">
+							QR codes always render dark on white so phones can scan them in dark mode.
+						</p>
 						<div class="row">
 							<Button variant="primary" icon="external-link" size="sm">Install in Stremio</Button>
-							<CopyButton value="https://example.com/manifest.json" label="Copy manifest URL" size="sm" />
+							<CopyButton
+								value="https://example.com/manifest.json"
+								label="Copy manifest URL"
+								size="sm"
+							/>
 						</div>
 					</div>
 				</div>
@@ -504,7 +598,9 @@
 		<!-- Icons -->
 		<section class="section" id="icons">
 			<h2>Icons</h2>
-			<p class="lead">Line icons on a 20px grid, stroke 1.5. Use <code>&lt;Icon name="..." /&gt;</code>.</p>
+			<p class="lead">
+				Line icons on a 20px grid, stroke 1.5. Use <code>&lt;Icon name="..." /&gt;</code>.
+			</p>
 			<div class="icons">
 				{#each icons as name (name)}
 					<div class="icon-cell" title={name}>
@@ -517,19 +613,39 @@
 	</div>
 {/if}
 
-<Modal bind:open={modalOpen} title="Add person" description="People get their own configs, share page and secrets.">
+<Modal
+	bind:open={modalOpen}
+	title="Add person"
+	description="People get their own configs, share page and secrets."
+>
 	<div class="stack" style:--stack-gap="14px">
 		<Input label="Display name" placeholder="e.g. Grandma" />
-		<Select label="AIOStreams template" placeholder="None" options={['Family', 'Anime fan']} value="" />
+		<Select
+			label="AIOStreams template"
+			placeholder="None"
+			options={['Family', 'Anime fan']}
+			value=""
+		/>
 		<Textarea label="Notes" rows={2} />
 	</div>
 	{#snippet footer()}
 		<Button onclick={() => (modalOpen = false)}>Cancel</Button>
-		<Button variant="primary" onclick={() => { modalOpen = false; toast.success('Person added'); }}>Add person</Button>
+		<Button
+			variant="primary"
+			onclick={() => {
+				modalOpen = false;
+				toast.success('Person added');
+			}}>Add person</Button
+		>
 	{/snippet}
 </Modal>
 
-<Modal bind:open={dangerOpen} size="sm" title="Delete Uncle Joe?" description="Their bindings, secrets and share links are removed.">
+<Modal
+	bind:open={dangerOpen}
+	size="sm"
+	title="Delete Uncle Joe?"
+	description="Their bindings, secrets and share links are removed."
+>
 	<Checkbox label="Also delete the upstream configs" />
 	{#snippet footer()}
 		<Button onclick={() => (dangerOpen = false)}>Cancel</Button>

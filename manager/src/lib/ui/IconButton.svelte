@@ -28,18 +28,12 @@
 </script>
 
 {#if href}
+	<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- consumers pass app paths -->
 	<a {href} class="ib {size} {klass}" class:active aria-label={label} title={label}>
 		<Icon name={icon} size={px} />
 	</a>
 {:else}
-	<button
-		{type}
-		class="ib {size} {klass}"
-		class:active
-		aria-label={label}
-		title={label}
-		{...rest}
-	>
+	<button {type} class="ib {size} {klass}" class:active aria-label={label} title={label} {...rest}>
 		<Icon name={icon} size={px} />
 	</button>
 {/if}

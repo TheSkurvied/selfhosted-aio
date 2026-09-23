@@ -63,6 +63,7 @@
 		if (target.closest('a, button, input, select, textarea, label, [role="menu"]')) return;
 		const href = rowHref(row);
 		if (e.metaKey || e.ctrlKey) window.open(href, '_blank');
+		// eslint-disable-next-line svelte/no-navigation-without-resolve -- consumers pass app paths
 		else goto(href);
 	}
 
@@ -120,8 +121,13 @@
 							</td>
 						{/if}
 						{#each columns as col, ci (col.key)}
-							<td style:text-align={col.align} class:hide-m={col.hideOnMobile} class:first={ci === 0}>
+							<td
+								style:text-align={col.align}
+								class:hide-m={col.hideOnMobile}
+								class:first={ci === 0}
+							>
 								{#if ci === 0 && rowHref}
+									<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- consumers pass app paths -->
 									<a class="row-link" href={rowHref(row)}>
 										{#if cell}{@render cell(row, col)}{:else}{valueOf(row, col.key) ?? ''}{/if}
 									</a>
@@ -193,6 +199,7 @@
 		border-bottom: 1px solid var(--divider);
 		color: var(--text);
 		vertical-align: middle;
+		white-space: nowrap;
 	}
 	.tbl :global(tbody tr) {
 		transition: background var(--ease);
@@ -219,6 +226,7 @@
 		display: inline-flex;
 		align-items: center;
 		gap: 6px;
+		vertical-align: middle;
 	}
 	.row-link:hover {
 		text-decoration: underline;

@@ -106,7 +106,12 @@
 	<div class="sidebar-slot" id="app-sidebar">
 		<Sidebar oncollapse={closeSidebar} collapseLabel="Close sidebar">
 			{#each NAV as item (item.href)}
-				<SidebarItem href={item.href} label={item.label} icon={item.icon} active={isActive(item.href)} />
+				<SidebarItem
+					href={item.href}
+					label={item.label}
+					icon={item.icon}
+					active={isActive(item.href)}
+				/>
 			{/each}
 
 			{#snippet footer()}
@@ -114,8 +119,18 @@
 					align="start"
 					items={[
 						{ heading: 'Appearance' },
-						{ label: 'Light', icon: 'sun', checked: theme.choice === 'light', onselect: () => theme.set('light') },
-						{ label: 'Dark', icon: 'moon', checked: theme.choice === 'dark', onselect: () => theme.set('dark') },
+						{
+							label: 'Light',
+							icon: 'sun',
+							checked: theme.choice === 'light',
+							onselect: () => theme.set('light')
+						},
+						{
+							label: 'Dark',
+							icon: 'moon',
+							checked: theme.choice === 'dark',
+							onselect: () => theme.set('dark')
+						},
 						{
 							label: 'Use system setting',
 							icon: 'circle-dashed',
@@ -133,7 +148,9 @@
 					{/snippet}
 				</Menu>
 				<div class="account">
-					<span class="avatar" aria-hidden="true">{(data.admin?.email ?? '?').charAt(0).toUpperCase()}</span>
+					<span class="avatar" aria-hidden="true"
+						>{(data.admin?.email ?? '?').charAt(0).toUpperCase()}</span
+					>
 					<span class="email" title={data.admin?.email}>{data.admin?.email ?? 'Signed in'}</span>
 				</div>
 				<form method="POST" action="/auth/logout">
@@ -378,6 +395,20 @@
 		}
 		.topbar {
 			padding: 0 8px;
+		}
+		/* Icon-only page actions and just the current crumb on phones. */
+		.tb-actions :global(.btn:not(.icon-only):has(svg) .label) {
+			display: none;
+		}
+		.tb-actions :global(.btn:not(.icon-only):has(svg)) {
+			width: 28px;
+			padding: 0;
+		}
+		.tb-left :global(.bc li:not(.last)) {
+			display: none;
+		}
+		.tb-left :global(.bc li.last) {
+			max-width: 100%;
 		}
 	}
 </style>

@@ -27,7 +27,11 @@
 		aria-valuemax={100}
 		aria-valuenow={pct ?? undefined}
 	>
-		<div class="fill {color}" class:indet={pct === null} style:width={pct === null ? undefined : `${pct}%`}></div>
+		<div
+			class="fill {color}"
+			class:indet={pct === null}
+			style:width={pct === null ? undefined : `${pct}%`}
+		></div>
 	</div>
 </div>
 

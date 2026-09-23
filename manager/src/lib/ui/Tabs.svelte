@@ -40,7 +40,7 @@
 		if (e.key === 'End') next = tabs.length - 1;
 		const t = tabs[next];
 		if (!t.href) select(t.id);
-		(list.querySelectorAll<HTMLElement>('[data-tab]')[next])?.focus();
+		list.querySelectorAll<HTMLElement>('[data-tab]')[next]?.focus();
 	}
 </script>
 
@@ -48,6 +48,7 @@
 	{#each tabs as t (t.id)}
 		{@const sel = t.id === active}
 		{#if t.href}
+			<!-- eslint-disable svelte/no-navigation-without-resolve -- consumers pass app paths -->
 			<a
 				data-tab
 				href={t.href}
@@ -62,6 +63,7 @@
 				<span>{t.label}</span>
 				{#if t.count !== undefined}<span class="count">{t.count}</span>{/if}
 			</a>
+			<!-- eslint-enable svelte/no-navigation-without-resolve -->
 		{:else}
 			<button
 				data-tab

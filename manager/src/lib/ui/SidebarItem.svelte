@@ -43,6 +43,7 @@
 {/snippet}
 
 {#if href}
+	<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- consumers pass app paths -->
 	<a class="item" class:active {href} aria-current={active ? 'page' : undefined} {onclick} {title}>
 		{@render inner()}
 	</a>

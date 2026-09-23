@@ -36,7 +36,9 @@
 
 {#snippet key()}
 	{#if name !== undefined}
-		{#if typeof name === 'number'}<span class="idx">{name}</span>{:else}<span class="key">"{name}"</span>{/if}<span class="p">: </span>
+		{#if typeof name === 'number'}<span class="idx">{name}</span>{:else}<span class="key"
+				>"{name}"</span
+			>{/if}<span class="p colon">:</span>
 	{/if}
 {/snippet}
 
@@ -44,11 +46,22 @@
 	<div class="node">
 		<button type="button" class="line toggle" aria-expanded={open} onclick={() => (open = !open)}>
 			<span class="caret" class:open aria-hidden="true">
-				<svg width="8" height="8" viewBox="0 0 10 10"><path d="M3 1.5v7l5-3.5Z" fill="currentColor" /></svg>
+				<svg width="8" height="8" viewBox="0 0 10 10"
+					><path d="M3 1.5v7l5-3.5Z" fill="currentColor" /></svg
+				>
 			</span>
 			{@render key()}<span class="p">{isArr ? '[' : '{'}</span>
 			{#if !open}
-				<span class="summary">{entries.length} {isArr ? (entries.length === 1 ? 'item' : 'items') : entries.length === 1 ? 'key' : 'keys'}</span><span class="p">{isArr ? ']' : '}'}{last ? '' : ','}</span>
+				<span class="summary"
+					>{entries.length}
+					{isArr
+						? entries.length === 1
+							? 'item'
+							: 'items'
+						: entries.length === 1
+							? 'key'
+							: 'keys'}</span
+				><span class="p">{isArr ? ']' : '}'}{last ? '' : ','}</span>
 			{:else if entries.length === 0}
 				<span class="p">{isArr ? ']' : '}'}{last ? '' : ','}</span>
 			{/if}
@@ -56,7 +69,13 @@
 		{#if open && entries.length > 0}
 			<div class="children">
 				{#each entries as [k, v], i (k)}
-					<JsonNode value={v} name={k} depth={depth + 1} {expandDepth} last={i === entries.length - 1} />
+					<JsonNode
+						value={v}
+						name={k}
+						depth={depth + 1}
+						{expandDepth}
+						last={i === entries.length - 1}
+					/>
 				{/each}
 			</div>
 			<div class="line close"><span class="p">{isArr ? ']' : '}'}{last ? '' : ','}</span></div>
@@ -65,18 +84,19 @@
 {:else}
 	{@const k = kind(value)}
 	<div class="line leaf">
-		{@render key()}<span class="v {k}">{k === 'str' || k === 'masked' || k === 'ph' ? JSON.stringify(value) : String(value)}</span><span class="p">{last ? '' : ','}</span>
+		{@render key()}<span class="v {k}"
+			>{k === 'str' || k === 'masked' || k === 'ph' ? JSON.stringify(value) : String(value)}</span
+		><span class="p">{last ? '' : ','}</span>
 	</div>
 {/if}
 
 <style>
 	.line {
-		display: flex;
-		align-items: baseline;
-		flex-wrap: wrap;
+		display: block;
 		min-height: 20px;
 		padding-left: 14px;
-		white-space: pre;
+		white-space: pre-wrap;
+		word-break: break-all;
 	}
 	.toggle {
 		position: relative;
@@ -111,10 +131,6 @@
 	.close {
 		padding-left: 14px;
 	}
-	.leaf {
-		white-space: pre-wrap;
-		word-break: break-all;
-	}
 	.key {
 		color: var(--text);
 	}
@@ -123,6 +139,9 @@
 	}
 	.p {
 		color: var(--text-tertiary);
+	}
+	.colon {
+		margin-right: 1ch;
 	}
 	.summary {
 		margin: 0 4px;
