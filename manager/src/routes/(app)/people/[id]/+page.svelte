@@ -19,7 +19,6 @@
 		Property,
 		PropertyList,
 		Tag,
-		Textarea,
 		Toggle,
 		toast,
 		type TagColor
@@ -54,7 +53,7 @@
 		const sp = page.url.searchParams;
 		if (sp.has('created') || sp.has('imported')) {
 			toast.success(sp.has('created') ? 'Person created' : 'Config imported');
-			// eslint-disable-next-line svelte/no-navigation-without-resolve -- same page
+
 			replaceState(page.url.pathname, {});
 		}
 		return stop;
@@ -96,7 +95,11 @@
 			busy.stop(`diff-${kind}`);
 		}
 	}
-	const CHANGE_COLOR: Record<string, TagColor> = { added: 'green', removed: 'red', changed: 'yellow' };
+	const CHANGE_COLOR: Record<string, TagColor> = {
+		added: 'green',
+		removed: 'red',
+		changed: 'yellow'
+	};
 
 	// ---- confirmations
 	let confirm = $state<{ kind: Kind; what: 'rotate' | 'remove' | 'adopt' } | null>(null);
@@ -117,6 +120,7 @@
 		updatedAt?: Date | string;
 	};
 	const secretRows = $derived.by(() => {
+		// eslint-disable-next-line svelte/prefer-svelte-reactivity -- local to this derived
 		const rows = new Map<string, SecretRow>();
 		for (const r of person.requiredSecrets)
 			rows.set(r.name, { name: r.name, required: true, satisfiedBy: r.satisfiedBy });
@@ -127,8 +131,7 @@
 			rows.set(s.name, row);
 		}
 		return [...rows.values()].sort(
-			(a, b) =>
-				Number(!!a.satisfiedBy) - Number(!!b.satisfiedBy) || a.name.localeCompare(b.name)
+			(a, b) => Number(!!a.satisfiedBy) - Number(!!b.satisfiedBy) || a.name.localeCompare(b.name)
 		);
 	});
 	const missingCount = $derived(secretRows.filter((r) => r.required && !r.satisfiedBy).length);
@@ -252,8 +255,7 @@
 						placeholder="Empty"
 						aria-label="Notes"
 						bind:value={notes}
-						onchange={saveProps}
-					></textarea>
+						onchange={saveProps}></textarea>
 				</Property>
 			</PropertyList>
 		</form>
@@ -290,8 +292,8 @@
 		{#if missingCount}
 			<div class="mb">
 				<Callout color="yellow"
-					>{missingCount} required secret{missingCount === 1 ? ' is' : 's are'} missing. Pushes fail
-					until {missingCount === 1 ? 'it is' : 'they are'} set.</Callout
+					>{missingCount} required secret{missingCount === 1 ? ' is' : 's are'} missing. Pushes fail until
+					{missingCount === 1 ? 'it is' : 'they are'} set.</Callout
 				>
 			</div>
 		{/if}
@@ -323,7 +325,11 @@
 						<span class="s-upd faint">{s.updatedAt ? fmtRelative(s.updatedAt) : ''}</span>
 						<span class="s-act">
 							<Button size="sm" variant="ghost" onclick={() => openSecret(s.name)}
-								>{s.personHint ? 'Replace' : s.satisfiedBy === 'shared' ? 'Override' : 'Set'}</Button
+								>{s.personHint
+									? 'Replace'
+									: s.satisfiedBy === 'shared'
+										? 'Override'
+										: 'Set'}</Button
 							>
 							{#if s.personHint}
 								<Button
@@ -397,7 +403,12 @@
 						<code class="mono">{newShareUrl}</code>
 					</div>
 					{#snippet actions()}
-						<CopyButton value={newShareUrl ?? ''} label="Copy" size="sm" copiedMessage="Share link copied" />
+						<CopyButton
+							value={newShareUrl ?? ''}
+							label="Copy"
+							size="sm"
+							copiedMessage="Share link copied"
+						/>
 						<Button size="sm" variant="ghost" onclick={() => (newShareUrl = null)}>Done</Button>
 					{/snippet}
 				</Callout>
@@ -476,14 +487,19 @@
 						Stremio addons stop working.
 					</p>
 				</div>
-				<Button variant="danger" size="sm" disabled={person.disabled} onclick={() => (revokeOpen = true)}
-					>Revoke access</Button
+				<Button
+					variant="danger"
+					size="sm"
+					disabled={person.disabled}
+					onclick={() => (revokeOpen = true)}>Revoke access</Button
 				>
 			</div>
 			<div class="dz-row">
 				<div>
 					<p class="dz-t">Delete person</p>
-					<p class="dz-d">Removes this person from the manager. You can keep or delete the upstream configs.</p>
+					<p class="dz-d">
+						Removes this person from the manager. You can keep or delete the upstream configs.
+					</p>
 				</div>
 				<Button variant="danger" size="sm" onclick={() => (deleteOpen = true)}>Delete</Button>
 			</div>
@@ -519,7 +535,9 @@
 >
 	{#if diff}
 		{#if diff.changes.length === 0}
-			<Callout color="green" title="No differences">The live config matches the desired config.</Callout>
+			<Callout color="green" title="No differences"
+				>The live config matches the desired config.</Callout
+			>
 		{:else}
 			<ul class="changes">
 				{#each diff.changes as c (c.path)}
@@ -581,14 +599,18 @@
 			id="confirm-binding"
 			class="stack"
 			method="POST"
-			action={confirm.what === 'rotate' ? '?/rotate' : confirm.what === 'adopt' ? '?/adopt' : '?/removeBinding'}
+			action={confirm.what === 'rotate'
+				? '?/rotate'
+				: confirm.what === 'adopt'
+					? '?/adopt'
+					: '?/removeBinding'}
 			use:enhance={submitter(busy, 'confirm', { onsuccess: () => (confirmOpen = false) })}
 		>
 			<input type="hidden" name="kind" value={confirm.kind} />
 			{#if confirm.what === 'rotate'}
 				<p>
-					A new config with a new uuid and password is created from the same settings, and the old one
-					is deleted upstream. {person.displayName} has to reinstall the addon from their share page.
+					A new config with a new uuid and password is created from the same settings, and the old
+					one is deleted upstream. {person.displayName} has to reinstall the addon from their share page.
 				</p>
 			{:else if confirm.what === 'adopt'}
 				<p>
@@ -612,7 +634,11 @@
 			form="confirm-binding"
 			variant={confirm?.what === 'adopt' ? 'primary' : 'danger'}
 			loading={busy.is('confirm')}
-			>{confirm?.what === 'rotate' ? 'Rotate' : confirm?.what === 'adopt' ? 'Adopt' : 'Remove'}</Button
+			>{confirm?.what === 'rotate'
+				? 'Rotate'
+				: confirm?.what === 'adopt'
+					? 'Adopt'
+					: 'Remove'}</Button
 		>
 	{/snippet}
 </Modal>
@@ -646,12 +672,13 @@
 				required
 				bind:value={secretName}
 				placeholder="rd_key"
-				hint="Used in templates as {'{{'}secret:name{'}}'}"
+				hint="Used in templates as {'{{'}secret:name}}"
 				autocomplete="off"
 				list="required-secrets"
 			/>
 			<datalist id="required-secrets">
-				{#each secretRows.filter((r) => !r.personHint) as r (r.name)}<option value={r.name}></option>{/each}
+				{#each secretRows.filter((r) => !r.personHint) as r (r.name)}<option value={r.name}
+					></option>{/each}
 			</datalist>
 		{/if}
 		<Input
@@ -665,15 +692,17 @@
 	</form>
 	{#snippet footer()}
 		<Button variant="ghost" onclick={() => (secretOpen = false)}>Cancel</Button>
-		<Button variant="primary" type="submit" form="secret-form" loading={busy.is('secret')}>Save</Button>
+		<Button variant="primary" type="submit" form="secret-form" loading={busy.is('secret')}
+			>Save</Button
+		>
 	{/snippet}
 </Modal>
 
 <Modal bind:open={removeSecretOpen} title="Remove {removeSecret}?" size="sm">
 	<p>
 		{#if person.requiredSecrets.some((r) => r.name === removeSecret)}
-			The shared secret of the same name is used instead, if there is one. Otherwise pushes fail until
-			it is set again.
+			The shared secret of the same name is used instead, if there is one. Otherwise pushes fail
+			until it is set again.
 		{:else}
 			This secret is not used by the bound templates.
 		{/if}
@@ -711,7 +740,13 @@
 
 <!-- Delete -->
 <Modal bind:open={deleteOpen} title="Delete {person.displayName}?" size="sm">
-	<form id="delete-person" class="stack" method="POST" action="?/delete" use:enhance={submitter(busy, 'delete')}>
+	<form
+		id="delete-person"
+		class="stack"
+		method="POST"
+		action="?/delete"
+		use:enhance={submitter(busy, 'delete')}
+	>
 		<p>The person, their secrets, share links and bindings are removed from the manager.</p>
 		<Checkbox
 			name="deleteUpstream"
@@ -722,7 +757,9 @@
 	</form>
 	{#snippet footer()}
 		<Button variant="ghost" onclick={() => (deleteOpen = false)}>Cancel</Button>
-		<Button type="submit" form="delete-person" variant="danger" loading={busy.is('delete')}>Delete</Button>
+		<Button type="submit" form="delete-person" variant="danger" loading={busy.is('delete')}
+			>Delete</Button
+		>
 	{/snippet}
 </Modal>
 
@@ -889,6 +926,12 @@
 		gap: 4px;
 		font-size: 13px;
 	}
+	.changes code,
+	.new-url code {
+		background: none;
+		padding: 0;
+		color: var(--text);
+	}
 	.changes li {
 		display: flex;
 		align-items: center;
@@ -896,6 +939,7 @@
 	}
 	.sbs {
 		display: grid;
+		margin-top: 16px;
 		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
 		gap: 16px;
 	}

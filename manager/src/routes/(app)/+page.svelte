@@ -13,7 +13,6 @@
 		Spinner,
 		StatusTag,
 		Tag,
-		SYNC_STATUS,
 		type SyncStatus
 	} from '$lib/ui';
 	import Section from './_lib/Section.svelte';
@@ -53,11 +52,6 @@
 	);
 
 	let openDetails = $state<Record<string, boolean>>({});
-	let checking = $state(false);
-	async function recheckHealth() {
-		checking = true;
-		await invalidate(() => true).finally(() => (checking = false));
-	}
 
 	function latency(checks: Array<{ latencyMs: number }>) {
 		if (!checks.length) return null;
@@ -76,9 +70,11 @@
 
 	<Section title="Health" id="health">
 		{#snippet actions()}
-			<Button size="sm" variant="ghost" icon="refresh" loading={checking} onclick={recheckHealth}
-				>Recheck</Button
-			>
+			<form method="POST" action="?/health" use:enhance={submitter(busy, 'health')}>
+				<Button size="sm" variant="ghost" type="submit" icon="refresh" loading={busy.is('health')}
+					>Recheck</Button
+				>
+			</form>
 		{/snippet}
 		{#await data.health}
 			<div class="health-loading" role="status">
@@ -95,8 +91,12 @@
 							<div class="inst-row">
 								<span class="inst-ic" class:bad={!inst.ok}><Icon name="server" size={18} /></span>
 								<span class="inst-name">{KIND_LABEL[inst.kind]}</span>
-								<span class="inst-ver mono">{inst.version ? `v${inst.version}` : 'version unknown'}</span>
-								<Tag color={inst.ok ? 'green' : 'red'} dot size="sm">{inst.ok ? 'Healthy' : 'Unhealthy'}</Tag>
+								<span class="inst-ver mono"
+									>{inst.version ? `v${inst.version}` : 'version unknown'}</span
+								>
+								<Tag color={inst.ok ? 'green' : 'red'} dot size="sm"
+									>{inst.ok ? 'Healthy' : 'Unhealthy'}</Tag
+								>
 								<span class="checks">
 									{#each inst.checks as c (c.endpoint)}
 										<span class="chk" class:warn={!c.ok} title={c.detail ?? c.endpoint}>
@@ -119,13 +119,20 @@
 									<p class="faint pub">Public URL <span class="mono">{inst.publicUrl}</span></p>
 									<table class="ctbl">
 										<thead>
-											<tr><th>Endpoint</th><th>Result</th><th class="r">Latency</th><th>Detail</th></tr>
+											<tr
+												><th>Endpoint</th><th>Result</th><th class="r">Latency</th><th>Detail</th
+												></tr
+											>
 										</thead>
 										<tbody>
 											{#each inst.checks as c (c.endpoint)}
 												<tr>
 													<td class="mono">{c.endpoint}</td>
-													<td><Tag size="sm" color={c.ok ? 'green' : 'red'}>{c.ok ? 'OK' : 'Failed'}</Tag></td>
+													<td
+														><Tag size="sm" color={c.ok ? 'green' : 'red'}
+															>{c.ok ? 'OK' : 'Failed'}</Tag
+														></td
+													>
 													<td class="r">{c.latencyMs} ms</td>
 													<td class="muted">{c.detail ?? ''}</td>
 												</tr>
@@ -144,7 +151,9 @@
 	<Section title="Sync" id="sync" description="{total} configurations across both services">
 		{#snippet actions()}
 			<form method="POST" action="?/checkAll" use:enhance={submitter(busy, 'check')}>
-				<Button size="sm" type="submit" icon="refresh" loading={busy.is('check')}>Check all now</Button>
+				<Button size="sm" type="submit" icon="refresh" loading={busy.is('check')}
+					>Check all now</Button
+				>
 			</form>
 			<form method="POST" action="?/pushPending" use:enhance={submitter(busy, 'push')}>
 				<Button
@@ -178,9 +187,12 @@
 	<Section title="Jobs" id="jobs">
 		{#snippet actions()}
 			<span class="live faint" title="Updates stream in live">
-				{#if live.mode === 'live'}<span class="dot"></span>Live{:else if live.mode === 'polling'}Refreshing{/if}
+				{#if live.mode === 'live'}<span class="dot"
+					></span>Live{:else if live.mode === 'polling'}Refreshing{/if}
 			</span>
-			<Button size="sm" variant="ghost" href={resolve('/jobs')} iconRight="arrow-right">All jobs</Button>
+			<Button size="sm" variant="ghost" href={resolve('/jobs')} iconRight="arrow-right"
+				>All jobs</Button
+			>
 		{/snippet}
 		<JobList jobs={live.jobs}>
 			{#snippet empty()}

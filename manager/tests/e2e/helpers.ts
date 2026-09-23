@@ -43,7 +43,16 @@ export async function login(page: Page) {
 	await page.locator('input[name="password"]').fill(ADMIN.password);
 	await page.getByRole('button', { name: 'Continue' }).click();
 	await page.waitForURL('**/login/totp');
-	await page.locator('input[name="code"]').first().fill(await totp());
+	await page
+		.locator('input[name="code"]')
+		.first()
+		.fill(await totp());
 	await page.getByRole('button', { name: 'Verify' }).click();
 	await expect(page.getByRole('heading', { name: 'Dashboard', level: 1 })).toBeVisible();
+}
+
+/** Navigate and wait until the app has hydrated (buttons that open modals need JS). */
+export async function open(page: Page, path: string) {
+	await page.goto(path);
+	await page.waitForLoadState('networkidle');
 }

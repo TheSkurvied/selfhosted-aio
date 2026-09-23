@@ -31,7 +31,9 @@
 						>{actorName(r.actorEmail)}</span
 					>
 				{/if}
-				<span class="action"><Tag size="sm" color={tagColorFor(r.action.split('.')[0])}>{r.action}</Tag></span>
+				<span class="action"
+					><Tag size="sm" color={tagColorFor(r.action.split('.')[0])}>{r.action}</Tag></span
+				>
 				<span class="summary">
 					{r.summary}
 					{#if r.diffPaths?.length}

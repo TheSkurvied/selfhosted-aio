@@ -12,7 +12,8 @@
 
 <main class="gone">
 	<div class="inner">
-		<span class="ic"><Icon name={notFound ? 'clock' : 'alert'} size={40} strokeWidth={1.25} /></span>
+		<span class="ic"><Icon name={notFound ? 'clock' : 'alert'} size={40} strokeWidth={1.25} /></span
+		>
 		{#if notFound}
 			<h1>This link has expired or is not valid</h1>
 			<p>

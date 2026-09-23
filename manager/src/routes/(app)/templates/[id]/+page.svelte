@@ -146,7 +146,10 @@
 
 <PageChrome
 	title={tpl.name}
-	crumbs={[{ label: 'Templates', href: resolve('/templates'), icon: 'template' }, { label: tpl.name }]}
+	crumbs={[
+		{ label: 'Templates', href: resolve('/templates'), icon: 'template' },
+		{ label: tpl.name }
+	]}
 >
 	{#snippet actions()}
 		<Button size="sm" variant="ghost" icon="sync" loading={busy.is('dry')} onclick={runDry}
@@ -174,7 +177,9 @@
 	<PageHeader title={tpl.name} icon="template" description={tpl.description || undefined}>
 		<PropertyList>
 			<Property label="Service" icon="server">
-				<Tag size="sm" color={tpl.kind === 'aiostreams' ? 'blue' : 'purple'}>{KIND_LABEL[tpl.kind]}</Tag>
+				<Tag size="sm" color={tpl.kind === 'aiostreams' ? 'blue' : 'purple'}
+					>{KIND_LABEL[tpl.kind]}</Tag
+				>
 			</Property>
 			<Property label="Current version" icon="hash">
 				<span class="mono">v{tpl.current.version}</span>
@@ -212,8 +217,12 @@
 				})}
 			>
 				<div class="tools">
-					<Button size="sm" variant="ghost" icon="key" disabled={!valid} onclick={() => (extractOpen = true)}
-						>Extract secrets</Button
+					<Button
+						size="sm"
+						variant="ghost"
+						icon="key"
+						disabled={!valid}
+						onclick={() => (extractOpen = true)}>Extract secrets</Button
 					>
 					<Button
 						size="sm"
@@ -235,7 +244,9 @@
 							{saveError}
 							{#snippet actions()}
 								{#if saveError?.includes('Extract secrets')}
-									<Button size="sm" icon="key" onclick={() => (extractOpen = true)}>Extract secrets</Button>
+									<Button size="sm" icon="key" onclick={() => (extractOpen = true)}
+										>Extract secrets</Button
+									>
 								{/if}
 							{/snippet}
 						</Callout>
@@ -244,9 +255,14 @@
 				{#if showValidation}
 					<div class="mb">
 						{#if showValidation.ok && !showValidation.rawSecrets}
-							<Callout color="green" title="Looks good">Valid {KIND_LABEL[tpl.kind]} template.</Callout>
+							<Callout color="green" title="Looks good"
+								>Valid {KIND_LABEL[tpl.kind]} template.</Callout
+							>
 						{:else}
-							<Callout color={showValidation.ok ? 'yellow' : 'red'} title={showValidation.ok ? 'Valid, but' : 'Not valid'}>
+							<Callout
+								color={showValidation.ok ? 'yellow' : 'red'}
+								title={showValidation.ok ? 'Valid, but' : 'Not valid'}
+							>
 								<ul class="errs">
 									{#each showValidation.errors as e (e)}<li>{e}</li>{/each}
 									{#if showValidation.rawSecrets}
@@ -272,7 +288,13 @@
 
 				<div class="save-row">
 					<div class="note">
-						<Input name="note" bind:value={note} placeholder="What changed? (optional)" aria-label="Version note" size="sm" />
+						<Input
+							name="note"
+							bind:value={note}
+							placeholder="What changed? (optional)"
+							aria-label="Version note"
+							size="sm"
+						/>
 					</div>
 					<Button
 						type="submit"
@@ -290,8 +312,12 @@
 						<h3 id="rollout-h">
 							{#if justSaved}Roll out v{justSaved}{:else}Roll out v{tpl.current.version}{/if}
 						</h3>
-						<Button size="sm" variant="ghost" icon="x" onclick={() => (dryRun = null)} aria-label="Close rollout"
-							>Close</Button
+						<Button
+							size="sm"
+							variant="ghost"
+							icon="x"
+							onclick={() => (dryRun = null)}
+							aria-label="Close rollout">Close</Button
 						>
 					</div>
 					{#if dryRun.length === 0}
@@ -301,7 +327,9 @@
 					{:else}
 						<p class="muted small">
 							{plural(dryRun.length, 'person', 'people')} follow the latest version. {willChange.length}
-							will change{blocked.length ? `, ${blocked.length} missing secrets (their push will fail)` : ''}.
+							will change{blocked.length
+								? `, ${blocked.length} missing secrets (their push will fail)`
+								: ''}.
 						</p>
 						<ul class="dry">
 							{#each dryRun as r (r.personId)}
@@ -330,7 +358,9 @@
 								<ProgressBar
 									value={finished / rolloutJobs.length}
 									color={failed ? 'red' : finished === rolloutJobs.length ? 'green' : 'accent'}
-									label="{finished} of {rolloutJobs.length} done{failed ? `, ${failed} failed` : ''}"
+									label="{finished} of {rolloutJobs.length} done{failed
+										? `, ${failed} failed`
+										: ''}"
 									showValue
 								/>
 							</div>
@@ -447,9 +477,16 @@
 >
 	{#if viewing}
 		{#if viewing.requiredSecrets.length}
-			<p class="faint small">Secrets: <span class="mono">{viewing.requiredSecrets.join(', ')}</span></p>
+			<p class="faint small">
+				Secrets: <span class="mono">{viewing.requiredSecrets.join(', ')}</span>
+			</p>
 		{/if}
-		<JsonView value={viewing.body} maxHeight={460} expandDepth={3} label="Version {viewing.version}" />
+		<JsonView
+			value={viewing.body}
+			maxHeight={460}
+			expandDepth={3}
+			label="Version {viewing.version}"
+		/>
 	{/if}
 	{#snippet footer()}
 		<Button variant="ghost" onclick={() => (viewOpen = false)}>Close</Button>
@@ -493,13 +530,18 @@
 			first.
 		</Callout>
 	{:else}
-		<p class="small">All {plural(tpl.versions.length, 'version')} are deleted. This cannot be undone.</p>
+		<p class="small">
+			All {plural(tpl.versions.length, 'version')} are deleted. This cannot be undone.
+		</p>
 	{/if}
 	{#snippet footer()}
 		<Button variant="ghost" onclick={() => (deleteOpen = false)}>Cancel</Button>
 		<form method="POST" action="?/delete" use:enhance={submitter(busy, 'delete')}>
-			<Button type="submit" variant="danger" disabled={tpl.usage.length > 0} loading={busy.is('delete')}
-				>Delete</Button
+			<Button
+				type="submit"
+				variant="danger"
+				disabled={tpl.usage.length > 0}
+				loading={busy.is('delete')}>Delete</Button
 			>
 		</form>
 	{/snippet}
@@ -641,6 +683,7 @@
 	.cov code {
 		font-size: 13px;
 		background: none;
+		color: var(--text);
 		padding: 0;
 	}
 	.side-link {

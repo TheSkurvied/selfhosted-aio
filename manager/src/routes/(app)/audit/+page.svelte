@@ -40,6 +40,7 @@
 	}
 
 	function setParam(key: string, value: string) {
+		// eslint-disable-next-line svelte/prefer-svelte-reactivity -- throwaway copy, not state
 		const sp = new URLSearchParams(page.url.searchParams);
 		if (value) sp.set(key, value);
 		else sp.delete(key);
@@ -101,7 +102,6 @@
 				variant="ghost"
 				icon="x"
 				onclick={() => {
-					// eslint-disable-next-line svelte/no-navigation-without-resolve -- resolved path
 					goto(resolve('/audit'), { keepFocus: true, noScroll: true });
 				}}>Clear filters</Button
 			>

@@ -44,7 +44,9 @@
 	let overrides = $derived(binding ? JSON.stringify(binding.overrides ?? {}, null, 2) : '{}');
 	let overridesValid = $state(true);
 
-	const savedOverrides = $derived(binding ? JSON.stringify(binding.overrides ?? {}, null, 2) : '{}');
+	const savedOverrides = $derived(
+		binding ? JSON.stringify(binding.overrides ?? {}, null, 2) : '{}'
+	);
 	const dirty = $derived(
 		!!binding &&
 			(templateId !== binding.templateId ||
@@ -73,7 +75,8 @@
 	]);
 	// A pinned version that belongs to another template makes no sense after switching.
 	$effect(() => {
-		if (version !== 'latest' && tpl && !tpl.versions.some((v) => v.id === version)) version = 'latest';
+		if (version !== 'latest' && tpl && !tpl.versions.some((v) => v.id === version))
+			version = 'latest';
 	});
 
 	const acct = $derived(binding?.account);
@@ -91,8 +94,12 @@
 			<div class="ba">
 				<form method="POST" action="?/check" use:enhance={submitter(busy, k('check'))}>
 					<input type="hidden" name="kind" value={kind} />
-					<Button size="sm" variant="ghost" type="submit" icon="refresh" loading={busy.is(k('check'))}
-						>Check</Button
+					<Button
+						size="sm"
+						variant="ghost"
+						type="submit"
+						icon="refresh"
+						loading={busy.is(k('check'))}>Check</Button
 					>
 				</form>
 				<Button
@@ -149,7 +156,12 @@
 				<dt>Remote uuid</dt>
 				<dd class="mono" title={acct?.remoteUuid ?? undefined}>
 					{#if acct?.remoteUuid}{shortId(acct.remoteUuid)}
-						<CopyButton value={acct.remoteUuid} size="sm" ariaLabel="Copy uuid" copiedMessage="uuid copied" />
+						<CopyButton
+							value={acct.remoteUuid}
+							size="sm"
+							ariaLabel="Copy uuid"
+							copiedMessage="uuid copied"
+						/>
 					{:else}<span class="faint">Not created yet</span>{/if}
 				</dd>
 			</div>
@@ -201,7 +213,12 @@
 			<div class="manifest">
 				<span class="ml">Manifest URL</span>
 				<code class="mu" title={binding.manifestUrl}>{binding.manifestUrl}</code>
-				<CopyButton value={binding.manifestUrl} size="sm" label="Copy" copiedMessage="Manifest URL copied" />
+				<CopyButton
+					value={binding.manifestUrl}
+					size="sm"
+					label="Copy"
+					copiedMessage="Manifest URL copied"
+				/>
 			</div>
 		{/if}
 
@@ -213,7 +230,12 @@
 		>
 			<input type="hidden" name="kind" value={kind} />
 			<div class="pickers">
-				<Select name="templateId" label="Template" options={templateOptions} bind:value={templateId} />
+				<Select
+					name="templateId"
+					label="Template"
+					options={templateOptions}
+					bind:value={templateId}
+				/>
 				<Select name="version" label="Version" options={versionOptions} bind:value={version} />
 			</div>
 			<div class="cols">
@@ -223,7 +245,7 @@
 						label="Overrides (JSON merge patch)"
 						bind:value={overrides}
 						bind:valid={overridesValid}
-						minLines={10}
+						minLines={6}
 						maxHeight={420}
 					/>
 				</div>
@@ -241,8 +263,15 @@
 								<div class="pv-loading" role="status"><Spinner size={14} /> Rendering...</div>
 							{:then res}
 								{#if res.ok}
-									<JsonView value={res.value.masked} maxHeight={400} expandDepth={2} label="{label} preview" />
-									<p class="faint hash mono" title="Desired hash">{res.value.desiredHash.slice(0, 12)}</p>
+									<JsonView
+										value={res.value.masked}
+										maxHeight={400}
+										expandDepth={2}
+										label="{label} preview"
+									/>
+									<p class="faint hash mono" title="Desired hash">
+										{res.value.desiredHash.slice(0, 12)}
+									</p>
 								{:else}
 									<Callout color="red">{res.error}</Callout>
 								{/if}
@@ -298,7 +327,9 @@
 					size="sm"
 				/>
 				<input type="hidden" name="version" value="latest" />
-				<Button size="sm" type="submit" icon="link" loading={busy.is(k('save'))}>Bind template</Button>
+				<Button size="sm" type="submit" icon="link" loading={busy.is(k('save'))}
+					>Bind template</Button
+				>
 			</div>
 		</form>
 	{/if}
@@ -383,6 +414,7 @@
 		font-size: 12px;
 		background: none;
 		padding: 0;
+		color: var(--text-secondary);
 	}
 	.edit {
 		display: flex;

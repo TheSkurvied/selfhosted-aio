@@ -48,7 +48,11 @@ export function errorMessageOf(data: Data, fallback = 'Request failed'): string 
 	return typeof e === 'string' && e ? e : fallback;
 }
 
-export function submitter(busy: Busy | null, key: string, opts: SubmitOptions = {}): SubmitFunction {
+export function submitter(
+	busy: Busy | null,
+	key: string,
+	opts: SubmitOptions = {}
+): SubmitFunction {
 	return (input) => {
 		opts.before?.(input);
 		busy?.start(key);

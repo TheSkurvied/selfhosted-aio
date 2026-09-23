@@ -111,6 +111,7 @@
 					label={item.label}
 					icon={item.icon}
 					active={isActive(item.href)}
+					badge={item.href === '/people' && data.attention ? data.attention : null}
 				/>
 			{/each}
 

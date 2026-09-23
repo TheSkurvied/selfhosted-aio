@@ -66,7 +66,7 @@
 		title="Templates"
 		icon="template"
 		meta={data.templates.length}
-		description="Shared configs that people follow. Secrets live in placeholders like {'{{'}secret:rd_key{'}}'}, never in the template."
+		description="Shared configs that people follow. Secrets live in placeholders like {'{{'}secret:rd_key}}, never in the template."
 	/>
 
 	<div class="gap"></div>
@@ -82,11 +82,13 @@
 				<span class="nm">{t.name}</span>
 				{#if t.description}<span class="desc faint">{t.description}</span>{/if}
 			{:else if col.key === 'kind'}
-				<Tag size="sm" color={t.kind === 'aiostreams' ? 'blue' : 'purple'}>{KIND_LABEL[t.kind]}</Tag>
+				<Tag size="sm" color={t.kind === 'aiostreams' ? 'blue' : 'purple'}>{KIND_LABEL[t.kind]}</Tag
+				>
 			{:else if col.key === 'version'}
 				<span class="mono">v{t.currentVersion}</span>
 			{:else if col.key === 'usedBy'}
-				{#if t.usedBy}{plural(t.usedBy, 'person', 'people')}{:else}<span class="faint">Unused</span>{/if}
+				{#if t.usedBy}{plural(t.usedBy, 'person', 'people')}{:else}<span class="faint">Unused</span
+					>{/if}
 			{:else if col.key === 'updated'}
 				<span class="muted">{fmtRelative(t.updatedAt)}</span>
 			{/if}
@@ -101,7 +103,9 @@
 					<div class="row">
 						<Button variant="primary" icon="plus" onclick={openNew}>New template</Button>
 						<form method="POST" action="?/seed" use:enhance={submitter(busy, 'seed')}>
-							<Button type="submit" icon="download" loading={busy.is('seed')}>Add starter templates</Button>
+							<Button type="submit" icon="download" loading={busy.is('seed')}
+								>Add starter templates</Button
+							>
 						</form>
 					</div>
 				{/snippet}
@@ -128,13 +132,22 @@
 				{newError}
 				{#snippet actions()}
 					{#if needsExtract}
-						<Button size="sm" icon="key" onclick={() => (extractOpen = true)}>Extract secrets</Button>
+						<Button size="sm" icon="key" onclick={() => (extractOpen = true)}
+							>Extract secrets</Button
+						>
 					{/if}
 				{/snippet}
 			</Callout>
 		{/if}
 		<div class="grid2">
-			<Input name="name" label="Name" bind:value={name} required autocomplete="off" placeholder="Family" />
+			<Input
+				name="name"
+				label="Name"
+				bind:value={name}
+				required
+				autocomplete="off"
+				placeholder="Family"
+			/>
 			<Select
 				name="kind"
 				label="Service"
@@ -149,8 +162,12 @@
 		<div class="body-head">
 			<span class="lbl">Body (JSON)</span>
 			<div class="row">
-				<Button size="sm" variant="ghost" icon="key" onclick={() => (extractOpen = true)} disabled={!bodyValid}
-					>Extract secrets</Button
+				<Button
+					size="sm"
+					variant="ghost"
+					icon="key"
+					onclick={() => (extractOpen = true)}
+					disabled={!bodyValid}>Extract secrets</Button
 				>
 				<Menu
 					label="Load starter"
@@ -173,7 +190,13 @@
 				</Menu>
 			</div>
 		</div>
-		<CodeEditor name="body" bind:value={body} bind:valid={bodyValid} minLines={12} maxHeight={380} />
+		<CodeEditor
+			name="body"
+			bind:value={body}
+			bind:valid={bodyValid}
+			minLines={12}
+			maxHeight={380}
+		/>
 		<Input name="note" label="Version note" placeholder="Initial version" />
 	</form>
 	{#snippet footer()}

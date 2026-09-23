@@ -77,8 +77,10 @@
 						<span class="attempts faint" title="Attempts">{j.attempts}x</span>
 					{/if}
 					<JobStatusTag status={j.status} title={j.error ?? undefined} />
-					<time class="when faint" datetime={new Date(j.createdAt).toISOString()} title={fmtDateTime(j.createdAt)}
-						>{fmtRelative(j.createdAt)}</time
+					<time
+						class="when faint"
+						datetime={new Date(j.createdAt).toISOString()}
+						title={fmtDateTime(j.createdAt)}>{fmtRelative(j.createdAt)}</time
 					>
 				</div>
 				{#if detailed && openId === j.id && j.error}
@@ -204,6 +206,12 @@
 		}
 		.when {
 			width: auto;
+		}
+		.when {
+			display: none;
+		}
+		.type {
+			min-width: 0;
 		}
 	}
 </style>

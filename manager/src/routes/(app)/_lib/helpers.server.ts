@@ -52,7 +52,8 @@ export async function settle<T>(p: Promise<T>): Promise<Settled<T>> {
 	try {
 		return { ok: true, value: await p };
 	} catch (e) {
-		if (!isServiceError(e)) log.warn('load step failed', { err: e instanceof Error ? e.message : String(e) });
+		if (!isServiceError(e))
+			log.warn('load step failed', { err: e instanceof Error ? e.message : String(e) });
 		return { ok: false, error: messageOf(e) };
 	}
 }
@@ -96,7 +97,8 @@ export function jsonObject(fd: FormData, name: string, label = name): Record<str
 	} catch (e) {
 		throw badInput(`${label} is not valid JSON: ${e instanceof Error ? e.message : 'parse error'}`);
 	}
-	if (!v || typeof v !== 'object' || Array.isArray(v)) throw badInput(`${label} must be a JSON object`);
+	if (!v || typeof v !== 'object' || Array.isArray(v))
+		throw badInput(`${label} must be a JSON object`);
 	return v as Record<string, unknown>;
 }
 

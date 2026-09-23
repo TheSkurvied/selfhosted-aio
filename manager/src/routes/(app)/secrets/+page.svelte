@@ -42,7 +42,9 @@
 
 <PageChrome title="Secrets">
 	{#snippet actions()}
-		<Button size="sm" variant="primary" icon="plus" onclick={() => openForm()}>Add shared secret</Button>
+		<Button size="sm" variant="primary" icon="plus" onclick={() => openForm()}
+			>Add shared secret</Button
+		>
 	{/snippet}
 </PageChrome>
 
@@ -64,7 +66,8 @@
 			{:else if col.key === 'templates'}
 				{#if s.usedByTemplates.length}
 					<span class="tpls">
-						{#each s.usedByTemplates as t (t)}<Tag size="sm" color="gray" icon="template">{t}</Tag>{/each}
+						{#each s.usedByTemplates as t (t)}<Tag size="sm" color="gray" icon="template">{t}</Tag
+							>{/each}
 					</span>
 				{:else}
 					<span class="faint">Not used</span>
@@ -101,7 +104,8 @@
 				description="Add one for keys everyone shares, such as a TMDB API key. Per-person keys go on each person's page."
 			>
 				{#snippet action()}
-					<Button variant="primary" icon="plus" onclick={() => openForm()}>Add shared secret</Button>
+					<Button variant="primary" icon="plus" onclick={() => openForm()}>Add shared secret</Button
+					>
 				{/snippet}
 			</EmptyState>
 		{/snippet}
@@ -135,15 +139,23 @@
 				mono
 				required
 				placeholder="tmdb_api_key"
-				hint="Used in templates as {'{{'}secret:name{'}}'}"
+				hint="Used in templates as {'{{'}secret:name}}"
 				autocomplete="off"
 			/>
 		{/if}
-		<Input name="value" type="password" label="Value" required autocomplete="new-password" spellcheck="false" />
+		<Input
+			name="value"
+			type="password"
+			label="Value"
+			required
+			autocomplete="new-password"
+			spellcheck="false"
+		/>
 	</form>
 	{#snippet footer()}
 		<Button variant="ghost" onclick={() => (formOpen = false)}>Cancel</Button>
-		<Button variant="primary" type="submit" form="secret-form" loading={busy.is('set')}>Save</Button>
+		<Button variant="primary" type="submit" form="secret-form" loading={busy.is('set')}>Save</Button
+		>
 	{/snippet}
 </Modal>
 
@@ -151,8 +163,8 @@
 	{#if deleting}
 		{#if deleting.peopleRelying}
 			<Callout color="yellow">
-				{plural(deleting.peopleRelying, 'person relies', 'people rely')} on this secret. Their pushes fail
-				until they get their own value or the secret is added again.
+				{plural(deleting.peopleRelying, 'person relies', 'people rely')} on this secret. Their pushes
+				fail until they get their own value or the secret is added again.
 			</Callout>
 		{:else}
 			<p class="small">Nobody relies on this secret right now.</p>
@@ -178,6 +190,7 @@
 	.nm {
 		font-size: 13px;
 		background: none;
+		color: var(--text);
 		padding: 0;
 		font-weight: 500;
 	}

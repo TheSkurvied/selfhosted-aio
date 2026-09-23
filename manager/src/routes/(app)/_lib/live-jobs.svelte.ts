@@ -49,13 +49,16 @@ export class LiveJobs {
 
 	private sorted(rows: JobRow[]) {
 		const f = this.opts.filter;
-		const list = (f ? rows.filter(f) : rows).toSorted((a, b) => time(b.createdAt) - time(a.createdAt));
+		const list = (f ? rows.filter(f) : rows).toSorted(
+			(a, b) => time(b.createdAt) - time(a.createdAt)
+		);
 		return this.opts.limit ? list.slice(0, this.opts.limit) : list;
 	}
 
 	upsert(job: JobRow) {
 		const i = this.jobs.findIndex((j) => j.id === job.id);
-		const next = i >= 0 ? this.jobs.toSpliced(i, 1, { ...this.jobs[i], ...job }) : [job, ...this.jobs];
+		const next =
+			i >= 0 ? this.jobs.toSpliced(i, 1, { ...this.jobs[i], ...job }) : [job, ...this.jobs];
 		this.jobs = this.sorted(next);
 		this.opts.onjob?.(job);
 	}

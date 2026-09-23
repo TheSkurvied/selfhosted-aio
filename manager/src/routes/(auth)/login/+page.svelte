@@ -60,5 +60,5 @@
 
 <p class="auth-foot">
 	You will be asked for a code from your authenticator app next. Lost access? Run
-	<code>scripts/reset-admin.ts</code> on the server.
+	<code>node build/cli/reset-admin.mjs</code> on the server.
 </p>

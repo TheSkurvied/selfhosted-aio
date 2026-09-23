@@ -33,14 +33,14 @@
 
 	type Person = (typeof data.people)[number];
 	type Kind = 'aiostreams' | 'aiometadata';
-	const KINDS: Kind[] = ['aiostreams', 'aiometadata'];
 
 	const busy = new Busy();
 	let selected = $state<string[]>([]);
 	// Drop selections that are no longer visible after a filter change.
 	$effect(() => {
 		const visible = new Set(data.people.map((p) => p.id));
-		if (selected.some((id) => !visible.has(id))) selected = selected.filter((id) => visible.has(id));
+		if (selected.some((id) => !visible.has(id)))
+			selected = selected.filter((id) => visible.has(id));
 	});
 
 	const columns: TableColumn[] = [
@@ -54,6 +54,7 @@
 	let q = $state(page.url.searchParams.get('q') ?? '');
 	let searchTimer: ReturnType<typeof setTimeout> | undefined;
 	function setParam(key: string, value: string) {
+		// eslint-disable-next-line svelte/prefer-svelte-reactivity -- throwaway copy, not state
 		const sp = new URLSearchParams(page.url.searchParams);
 		if (value) sp.set(key, value);
 		else sp.delete(key);
@@ -193,8 +194,13 @@
 					icon="upload"
 					loading={busy.is('bulk')}>Push</Button
 				>
-				<Button size="sm" type="submit" name="op" value="check" icon="refresh" disabled={busy.is('bulk')}
-					>Check</Button
+				<Button
+					size="sm"
+					type="submit"
+					name="op"
+					value="check"
+					icon="refresh"
+					disabled={busy.is('bulk')}>Check</Button
 				>
 				<Button size="sm" variant="ghost" onclick={() => (selected = [])}>Clear</Button>
 			</form>
@@ -233,7 +239,7 @@
 					icon="x"
 					onclick={() => {
 						q = '';
-						// eslint-disable-next-line svelte/no-navigation-without-resolve -- resolved path
+
 						goto(resolve('/people'), { keepFocus: true, noScroll: true, replaceState: true });
 					}}>Clear filters</Button
 				>
@@ -293,7 +299,9 @@
 				>
 					{#snippet action()}
 						<div class="row">
-							<Button variant="primary" icon="plus" onclick={() => (newOpen = true)}>New person</Button>
+							<Button variant="primary" icon="plus" onclick={() => (newOpen = true)}
+								>New person</Button
+							>
 							<Button icon="download" onclick={() => openImport('aiostreams')}>Import</Button>
 						</div>
 					{/snippet}
@@ -365,7 +373,14 @@
 		use:enhance={submitter(busy, 'importStreams', { onfailure: (m) => (importError = m) })}
 	>
 		{#if importError}<Callout color="red">{importError}</Callout>{/if}
-		<Input name="uuid" label="Config uuid" mono required autocomplete="off" placeholder="3f2c8e1a-..." />
+		<Input
+			name="uuid"
+			label="Config uuid"
+			mono
+			required
+			autocomplete="off"
+			placeholder="3f2c8e1a-..."
+		/>
 		<Input
 			name="password"
 			type="password"
@@ -490,7 +505,9 @@
 					.map((t) => ({ value: t.id, label: `${t.name} (v${t.currentVersion})` }))
 			]}
 		/>
-		<p class="faint small">{KIND_LABEL[kind]} configs keep their uuid, so installed addons keep working.</p>
+		<p class="faint small">
+			{KIND_LABEL[kind]} configs keep their uuid, so installed addons keep working.
+		</p>
 	</fieldset>
 {/snippet}
 

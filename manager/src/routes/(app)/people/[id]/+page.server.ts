@@ -86,7 +86,8 @@ export const actions: Actions = {
 	update: async ({ request, locals, params }) => {
 		const fd = await request.formData();
 		return attempt(async () => {
-			const patch: { displayName?: string; notes?: string; tags?: string[]; disabled?: boolean } = {};
+			const patch: { displayName?: string; notes?: string; tags?: string[]; disabled?: boolean } =
+				{};
 			if (fd.has('displayName')) {
 				const n = str(fd, 'displayName');
 				if (!n) throw badInput('Name cannot be empty');
@@ -181,7 +182,9 @@ export const actions: Actions = {
 			const name = str(fd, 'name');
 			const value = typeof fd.get('value') === 'string' ? (fd.get('value') as string) : '';
 			if (!SECRET_NAME.test(name))
-				throw badInput('Secret names start with a letter or digit and use letters, digits, dot, dash or underscore');
+				throw badInput(
+					'Secret names start with a letter or digit and use letters, digits, dot, dash or underscore'
+				);
 			if (!value) throw badInput('Enter a value');
 			await setSecret(actorOf(locals), 'person', params.id, name, value);
 			return { message: `Secret ${name} saved` };
@@ -229,7 +232,9 @@ export const actions: Actions = {
 	delete: async ({ request, locals, params }) => {
 		const fd = await request.formData();
 		const res = await attempt(async () => {
-			await deletePerson(actorOf(locals), params.id, { deleteUpstream: bool(fd, 'deleteUpstream') });
+			await deletePerson(actorOf(locals), params.id, {
+				deleteUpstream: bool(fd, 'deleteUpstream')
+			});
 			return { deleted: true as const };
 		}, 'delete person');
 		if ('deleted' in res) redirect(303, '/people');

@@ -16,12 +16,17 @@ export function placeholder(name: string): string {
 export function isPlaceholderString(s: string): boolean {
 	PLACEHOLDER.lastIndex = 0;
 	const m = PLACEHOLDER.exec(s);
+	PLACEHOLDER.lastIndex = 0;
 	return !!m && m.index === 0 && m[0].length === s.length;
 }
 
 export function hasPlaceholder(s: string): boolean {
 	PLACEHOLDER.lastIndex = 0;
-	return PLACEHOLDER.test(s);
+	const found = PLACEHOLDER.test(s);
+	// The regex is global, so test() leaves lastIndex past the match; matchAll
+	// copies lastIndex, which would make requiredSecrets skip placeholders.
+	PLACEHOLDER.lastIndex = 0;
+	return found;
 }
 
 /** Every secret name referenced anywhere in `body`, sorted and de-duplicated. */
@@ -29,7 +34,7 @@ export function requiredSecrets(body: unknown): string[] {
 	const names = new Set<string>();
 	const visit = (v: unknown) => {
 		if (typeof v === 'string') {
-			for (const m of v.matchAll(PLACEHOLDER)) names.add(m[1]);
+			for (const m of v.matchAll(new RegExp(PLACEHOLDER.source, 'g'))) names.add(m[1]);
 		} else if (Array.isArray(v)) v.forEach(visit);
 		else if (isPlainObject(v)) Object.values(v).forEach(visit);
 	};

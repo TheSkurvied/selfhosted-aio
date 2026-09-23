@@ -22,6 +22,12 @@ export const load: PageServerLoad = async ({ depends }) => {
 };
 
 export const actions: Actions = {
+	// Refresh the cached health; the load that follows reads the fresh value.
+	health: async () =>
+		attempt(async () => {
+			await getHealth({ fresh: true });
+			return {};
+		}),
 	pushPending: async ({ locals }) =>
 		attempt(async () => {
 			const { jobIds } = await pushAllPending(actorOf(locals));

@@ -13,7 +13,9 @@ function toDate(d: Date | string | number | null | undefined): Date | null {
 /** "Sep 20, 2026" */
 export function fmtDate(d: Date | string | number | null | undefined, empty = '-'): string {
 	const x = toDate(d);
-	return x ? x.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : empty;
+	return x
+		? x.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+		: empty;
 }
 
 /** "Sep 20, 2026, 09:12" */

@@ -4,7 +4,11 @@
 	let { data } = $props();
 
 	const ABOUT = {
-		aiometadata: { title: 'Metadata', sub: 'AIOMetadata', text: 'Posters, descriptions and catalogs.' },
+		aiometadata: {
+			title: 'Metadata',
+			sub: 'AIOMetadata',
+			text: 'Posters, descriptions and catalogs.'
+		},
 		aiostreams: { title: 'Streams', sub: 'AIOStreams', text: 'The links that actually play.' }
 	} as const;
 
@@ -59,7 +63,11 @@
 							<Button href={l.stremioUrl} variant="primary" icon="download" rel="noreferrer"
 								>Install in Stremio</Button
 							>
-							<CopyButton value={l.manifestUrl} label="Copy manifest URL" copiedMessage="Manifest URL copied" />
+							<CopyButton
+								value={l.manifestUrl}
+								label="Copy manifest URL"
+								copiedMessage="Manifest URL copied"
+							/>
 							<Button
 								variant="ghost"
 								icon="qr"
@@ -92,7 +100,8 @@
 					{/if}
 					{#if hasMeta}
 						<li>
-							If Stremio asks whether to remove <strong>Cinemeta</strong>, say yes. Metadata replaces it.
+							If Stremio asks whether to remove <strong>Cinemeta</strong>, say yes. Metadata
+							replaces it.
 						</li>
 					{/if}
 					<li>

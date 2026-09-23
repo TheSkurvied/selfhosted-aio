@@ -10,7 +10,16 @@ import {
 	listTemplates,
 	setBinding
 } from '$lib/server/services';
-import { actorOf, attempt, badInput, bool, optStr, str, tagsOf, KINDS } from '../_lib/helpers.server';
+import {
+	actorOf,
+	attempt,
+	badInput,
+	bool,
+	optStr,
+	str,
+	tagsOf,
+	KINDS
+} from '../_lib/helpers.server';
 import { plural } from '../_lib/format';
 
 const STATUSES = ['in_sync', 'pending', 'drifted', 'missing', 'error', 'unbound', 'never_pushed'];
@@ -47,7 +56,8 @@ export const load: PageServerLoad = async ({ url, depends }) => {
 async function bindInitial(actor: string, personId: string, fd: FormData) {
 	for (const kind of KINDS) {
 		const templateId = optStr(fd, `template_${kind}`);
-		if (templateId) await setBinding(actor, personId, kind, { templateId, pinnedVersionId: null, overrides: {} });
+		if (templateId)
+			await setBinding(actor, personId, kind, { templateId, pinnedVersionId: null, overrides: {} });
 	}
 }
 

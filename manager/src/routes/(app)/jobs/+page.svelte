@@ -46,7 +46,8 @@
 		<div class="tabs-row">
 			<Tabs {tabs} active={data.status} label="Job status" />
 			<span class="live faint">
-				{#if live.mode === 'live'}<span class="dot"></span>Live{:else if live.mode === 'polling'}Auto refresh{/if}
+				{#if live.mode === 'live'}<span class="dot"
+					></span>Live{:else if live.mode === 'polling'}Auto refresh{/if}
 			</span>
 		</div>
 	</PageHeader>

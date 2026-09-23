@@ -69,7 +69,8 @@
 			{/each}
 		</div>
 		<p class="faint small">
-			Change these with the <span class="mono">AIOSTREAMS_*</span> and <span class="mono">AIOMETADATA_*</span>
+			Change these with the <span class="mono">AIOSTREAMS_*</span> and
+			<span class="mono">AIOMETADATA_*</span>
 			environment variables and restart.
 		</p>
 	</Section>
@@ -110,12 +111,17 @@
 				<span class="label">Encryption key fingerprint</span>
 				<span class="grow"></span>
 				<code class="mono fp">{s.keyFingerprint}</code>
-				<CopyButton value={s.keyFingerprint} size="sm" ariaLabel="Copy fingerprint" copiedMessage="Fingerprint copied" />
+				<CopyButton
+					value={s.keyFingerprint}
+					size="sm"
+					ariaLabel="Copy fingerprint"
+					copiedMessage="Fingerprint copied"
+				/>
 			</li>
 		</ul>
 		<Callout color="gray" icon="key">
-			Keep a copy of <span class="mono">MANAGER_KEY</span> with your backups. Compare its fingerprint with the
-			one above to check that a backup key matches this database.
+			Keep a copy of <span class="mono">MANAGER_KEY</span> with your backups. Compare its fingerprint
+			with the one above to check that a backup key matches this database.
 		</Callout>
 	</Section>
 
@@ -153,14 +159,23 @@
 			>
 		{/snippet}
 		{#if orphans === null}
-			<p class="faint small">Not run yet. Listing AIOStreams users needs the manager's AIOStreams admin login.</p>
+			<p class="faint small">
+				Not run yet. Listing AIOStreams users needs the manager's AIOStreams admin login.
+			</p>
 		{:else if orphans.length === 0}
-			<EmptyState compact icon="check" title="No orphans" description="Every upstream config is managed." />
+			<EmptyState
+				compact
+				icon="check"
+				title="No orphans"
+				description="Every upstream config is managed."
+			/>
 		{:else}
 			<ul class="rows">
 				{#each orphans as o (o.kind + o.uuid)}
 					<li>
-						<Tag size="sm" color={o.kind === 'aiostreams' ? 'blue' : 'purple'}>{KIND_LABEL[o.kind]}</Tag>
+						<Tag size="sm" color={o.kind === 'aiostreams' ? 'blue' : 'purple'}
+							>{KIND_LABEL[o.kind]}</Tag
+						>
 						<code class="mono grow uuid">{o.uuid}</code>
 						{#if o.createdAt}<span class="faint small">{fmtDate(o.createdAt)}</span>{/if}
 					</li>
@@ -173,7 +188,9 @@
 	<Section title="Starter templates" id="starters">
 		{#snippet actions()}
 			<form method="POST" action="?/seed" use:enhance={submitter(busy, 'seed')}>
-				<Button size="sm" type="submit" icon="download" loading={busy.is('seed')}>Add starters</Button>
+				<Button size="sm" type="submit" icon="download" loading={busy.is('seed')}
+					>Add starters</Button
+				>
 			</form>
 		{/snippet}
 		<ul class="rows">
@@ -181,7 +198,9 @@
 				<li>
 					<Icon name="file" size={16} />
 					<span class="grow">{st.name}</span>
-					<Tag size="sm" color={st.kind === 'aiostreams' ? 'blue' : 'purple'}>{KIND_LABEL[st.kind]}</Tag>
+					<Tag size="sm" color={st.kind === 'aiostreams' ? 'blue' : 'purple'}
+						>{KIND_LABEL[st.kind]}</Tag
+					>
 				</li>
 			{/each}
 		</ul>
@@ -271,6 +290,7 @@
 	.fp {
 		font-size: 12px;
 		background: none;
+		color: var(--text-secondary);
 		padding: 0;
 		overflow-wrap: anywhere;
 	}

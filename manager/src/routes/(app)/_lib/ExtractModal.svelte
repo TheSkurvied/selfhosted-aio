@@ -161,6 +161,7 @@
 	}
 	.path {
 		font-size: 12px;
+		color: var(--text);
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;

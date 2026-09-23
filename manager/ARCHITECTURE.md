@@ -14,30 +14,31 @@ This file is the shared contract for everyone building the app. The product spec
 
 ## Runtime env (all read in `src/lib/server/env.ts`, validated with zod)
 
-| Var | Required | Notes |
-|---|---|---|
-| `DATABASE_URL` | yes | Postgres URL. |
-| `MANAGER_KEY` | yes | 64 hex characters (32 bytes). The AES-256-GCM key. |
-| `PORT` | no | adapter-node reads it; it is 8080 in compose. |
-| `PUBLIC_URL` | yes | The manager's own URL, e.g. `https://manage.example.com`. Also set `ORIGIN` to the same value for the adapter-node CSRF check; the Dockerfile sets `ORIGIN=$PUBLIC_URL` in its entrypoint. |
-| `AIOSTREAMS_INTERNAL_URL` | yes | e.g. `http://aiostreams:3000` |
-| `AIOSTREAMS_PUBLIC_URL` | yes | Used to build the manifest URLs that people get. |
-| `AIOSTREAMS_USERNAME` | no | Account used when `AIOSTREAMS_AUTH_REQUIRED=true` upstream. |
-| `AIOSTREAMS_PASSWORD` | no | Password for `AIOSTREAMS_USERNAME`. |
-| `AIOMETADATA_INTERNAL_URL` | yes | e.g. `http://aiometadata:3232` |
-| `AIOMETADATA_PUBLIC_URL` | yes | Used to build the manifest URLs that people get. |
-| `AIOMETADATA_ADMIN_KEY` | yes | Sent as `x-admin-key`. |
-| `AIOMETADATA_ADDON_PASSWORD` | no | Sent as `addonPassword` on save, load and update. |
-| `OIDC_ISSUER` | no | All four `OIDC_*`/`ADMIN_EMAILS` variables together turn on OIDC login. |
-| `OIDC_CLIENT_ID` | no | See `OIDC_ISSUER`. |
-| `OIDC_CLIENT_SECRET` | no | See `OIDC_ISSUER`. |
-| `ADMIN_EMAILS` | no | Comma separated. |
-| `NTFY_URL` | no | e.g. `https://ntfy.sh/my-topic`. Drift and missing notifications are POSTed here. |
-| `CHECK_INTERVAL_HOURS` | no | Default 6. Set to 0 to disable scheduled checks. |
-| `LOG_LEVEL` | no | Default `info`. |
-| `AIOSTREAMS_USER_API_LIMIT` | no | Client-side throttle for AIOStreams `/api/v1/user` calls, written `max/seconds`. The default `5/5` matches the upstream default; use `off` if you raised the limit upstream. |
+| Var                          | Required | Notes                                                                                                                                                                                      |
+| ---------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `DATABASE_URL`               | yes      | Postgres URL.                                                                                                                                                                              |
+| `MANAGER_KEY`                | yes      | 64 hex characters (32 bytes). The AES-256-GCM key.                                                                                                                                         |
+| `PORT`                       | no       | adapter-node reads it; it is 8080 in compose.                                                                                                                                              |
+| `PUBLIC_URL`                 | yes      | The manager's own URL, e.g. `https://manage.example.com`. Also set `ORIGIN` to the same value for the adapter-node CSRF check; the Dockerfile sets `ORIGIN=$PUBLIC_URL` in its entrypoint. |
+| `AIOSTREAMS_INTERNAL_URL`    | yes      | e.g. `http://aiostreams:3000`                                                                                                                                                              |
+| `AIOSTREAMS_PUBLIC_URL`      | yes      | Used to build the manifest URLs that people get.                                                                                                                                           |
+| `AIOSTREAMS_USERNAME`        | no       | Account used when `AIOSTREAMS_AUTH_REQUIRED=true` upstream.                                                                                                                                |
+| `AIOSTREAMS_PASSWORD`        | no       | Password for `AIOSTREAMS_USERNAME`.                                                                                                                                                        |
+| `AIOMETADATA_INTERNAL_URL`   | yes      | e.g. `http://aiometadata:3232`                                                                                                                                                             |
+| `AIOMETADATA_PUBLIC_URL`     | yes      | Used to build the manifest URLs that people get.                                                                                                                                           |
+| `AIOMETADATA_ADMIN_KEY`      | yes      | Sent as `x-admin-key`.                                                                                                                                                                     |
+| `AIOMETADATA_ADDON_PASSWORD` | no       | Sent as `addonPassword` on save, load and update.                                                                                                                                          |
+| `OIDC_ISSUER`                | no       | All four `OIDC_*`/`ADMIN_EMAILS` variables together turn on OIDC login.                                                                                                                    |
+| `OIDC_CLIENT_ID`             | no       | See `OIDC_ISSUER`.                                                                                                                                                                         |
+| `OIDC_CLIENT_SECRET`         | no       | See `OIDC_ISSUER`.                                                                                                                                                                         |
+| `ADMIN_EMAILS`               | no       | Comma separated.                                                                                                                                                                           |
+| `NTFY_URL`                   | no       | e.g. `https://ntfy.sh/my-topic`. Drift and missing notifications are POSTed here.                                                                                                          |
+| `CHECK_INTERVAL_HOURS`       | no       | Default 6. Set to 0 to disable scheduled checks.                                                                                                                                           |
+| `LOG_LEVEL`                  | no       | Default `info`.                                                                                                                                                                            |
+| `AIOSTREAMS_USER_API_LIMIT`  | no       | Client-side throttle for AIOStreams `/api/v1/user` calls, written `max/seconds`. The default `5/5` matches the upstream default; use `off` if you raised the limit upstream.               |
 
 **Instances come from env only; there is no editing in the UI.**
+
 - At boot the app upserts two rows into `instances`, one for each kind.
 - The Settings page shows them read-only, with the secrets masked.
 
@@ -92,6 +93,7 @@ log.info/warn/error(msg, fields?)   // JSON lines; redacts keys matching /pass|k
 - Migrations live in `drizzle/`. They are generated with `pnpm db:generate` and applied at boot by `$lib/server/db/migrate.ts`, which uses the drizzle-orm migrator and is called from `hooks.server.ts` `init`.
 
 `event.locals` holds `{ admin: { id, email } | null, sessionId: string | null }`.
+
 - `hooks.server.ts` sends every non-public route to `/login` when `locals.admin` is null.
 - Public routes are `/login`, `/setup`, `/login/totp`, `/auth/*`, `/s/*`, `/healthz`, and static assets.
 - `/setup` exists only while there are no admins.
@@ -207,53 +209,54 @@ getSettings(): Promise<{ instances: Array<{ kind, internalUrl, publicUrl, authCo
 ## Design system: Notion style (DESIGN)
 
 The reference is Notion's app UI: calm, neutral, content-first.
+
 - **No emojis anywhere.** Where Notion would use an emoji as a page icon, use monochrome line SVG icons (stroke 1.5, 16/18/20px).
 
 - **Tokens** go in `src/app.css` as CSS custom properties on `:root`.
   - Dark values go under `@media (prefers-color-scheme: dark)` and `[data-theme=dark]`.
   - A theme toggle in the sidebar sets `data-theme`; the choice is stored in localStorage and the OS setting is the default.
 
-| Token | Light | Dark |
-|---|---|---|
-| Text | `#37352F` | `rgba(255,255,255,0.81)` |
-| Secondary text | `rgba(55,53,47,0.65)` | |
-| Tertiary text | `rgba(55,53,47,0.45)` | |
-| Page background | `#FFFFFF` | `#191919` |
-| Sidebar | `#F7F7F5` | `#202020` |
-| Hover | `rgba(55,53,47,0.06)` | |
-| Pressed | `rgba(55,53,47,0.12)` | |
-| Divider/border | `rgba(55,53,47,0.09)` | |
-| Input border | `rgba(55,53,47,0.16)` | |
-| Accent blue | `#2383E2` | |
-| Danger | `#EB5757` | |
+| Token           | Light                 | Dark                     |
+| --------------- | --------------------- | ------------------------ |
+| Text            | `#37352F`             | `rgba(255,255,255,0.81)` |
+| Secondary text  | `rgba(55,53,47,0.65)` |                          |
+| Tertiary text   | `rgba(55,53,47,0.45)` |                          |
+| Page background | `#FFFFFF`             | `#191919`                |
+| Sidebar         | `#F7F7F5`             | `#202020`                |
+| Hover           | `rgba(55,53,47,0.06)` |                          |
+| Pressed         | `rgba(55,53,47,0.12)` |                          |
+| Divider/border  | `rgba(55,53,47,0.09)` |                          |
+| Input border    | `rgba(55,53,47,0.16)` |                          |
+| Accent blue     | `#2383E2`             |                          |
+| Danger          | `#EB5757`             |                          |
 
 - **Tag colors** are background/text pairs:
 
-| Color | Background | Text |
-|---|---|---|
-| gray | `#E3E2E0` | `#32302C` |
-| brown | `#EEE0DA` | `#442A1E` |
-| orange | `#FADEC9` | `#49290E` |
-| yellow | `#FDECC8` | `#402C1B` |
-| green | `#DBEDDB` | `#1C3829` |
-| blue | `#D3E5EF` | `#183347` |
-| purple | `#E8DEEE` | `#412454` |
-| pink | `#F5E0E9` | `#4C2337` |
-| red | `#FFE2DD` | `#5D1715` |
+| Color  | Background | Text      |
+| ------ | ---------- | --------- |
+| gray   | `#E3E2E0`  | `#32302C` |
+| brown  | `#EEE0DA`  | `#442A1E` |
+| orange | `#FADEC9`  | `#49290E` |
+| yellow | `#FDECC8`  | `#402C1B` |
+| green  | `#DBEDDB`  | `#1C3829` |
+| blue   | `#D3E5EF`  | `#183347` |
+| purple | `#E8DEEE`  | `#412454` |
+| pink   | `#F5E0E9`  | `#4C2337` |
+| red    | `#FFE2DD`  | `#5D1715` |
 
-  Dark mode uses Notion's dark equivalents: muted, low-saturation backgrounds with light text.
+Dark mode uses Notion's dark equivalents: muted, low-saturation backgrounds with light text.
 
 - **Status colors:**
 
-| Status | Color |
-|---|---|
-| in_sync | green |
-| pending | yellow |
-| drifted | orange |
-| missing | red |
-| error | red |
-| unbound | gray |
-| never_pushed | blue |
+| Status       | Color  |
+| ------------ | ------ |
+| in_sync      | green  |
+| pending      | yellow |
+| drifted      | orange |
+| missing      | red    |
+| error        | red    |
+| unbound      | gray   |
+| never_pushed | blue   |
 
 - **Type:**
   - Font stack: `ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif`.

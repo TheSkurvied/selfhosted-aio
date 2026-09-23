@@ -121,6 +121,13 @@ describe('placeholders', () => {
 			})
 		).toEqual(['a', 'b']);
 	});
+
+	it('still finds placeholders right after extractSecrets (regex lastIndex regression)', () => {
+		const body = { services: [{ credentials: { apiKey: '{{secret:rd_key}}' } }] };
+		extractSecrets(body);
+		expect(requiredSecrets(body)).toEqual(['rd_key']);
+		expect(requiredSecrets(body)).toEqual(['rd_key']);
+	});
 });
 
 describe('strip + hash', () => {
