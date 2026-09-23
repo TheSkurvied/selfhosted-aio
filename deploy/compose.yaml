@@ -259,6 +259,15 @@ services:
       AIOMETADATA_INTERNAL_URL: http://aiometadata:3232
       AIOMETADATA_PUBLIC_URL: https://meta.${DOMAIN}
       AIOMETADATA_ADMIN_KEY: ${AIOMETADATA_ADMIN_KEY:?}
+      AIOMETADATA_ADDON_PASSWORD: ${AIOMETADATA_ADDON_PASSWORD:-}
+      AIOSTREAMS_USERNAME: ${MANAGER_AIOSTREAMS_USERNAME:-}
+      AIOSTREAMS_PASSWORD: ${MANAGER_AIOSTREAMS_PASSWORD:-}
+      OIDC_ISSUER: ${MANAGER_OIDC_ISSUER:-}
+      OIDC_CLIENT_ID: ${MANAGER_OIDC_CLIENT_ID:-}
+      OIDC_CLIENT_SECRET: ${MANAGER_OIDC_CLIENT_SECRET:-}
+      ADMIN_EMAILS: ${MANAGER_ADMIN_EMAILS:-}
+      NTFY_URL: ${MANAGER_NTFY_URL:-}
+      CHECK_INTERVAL_HOURS: ${MANAGER_CHECK_INTERVAL_HOURS:-6}
     networks:
       - edge
       - backend
@@ -269,7 +278,6 @@ services:
         condition: service_healthy
       aiometadata:
         condition: service_healthy
-    # Assumes the image ships wget and serves GET /healthz. Adjust to match the app.
     healthcheck:
       test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://localhost:8080/healthz"]
       interval: 30s

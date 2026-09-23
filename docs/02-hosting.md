@@ -215,7 +215,7 @@ Because `SECRET_KEY` comes back with `.env`, every existing AIOStreams manifest 
 |---|---|
 | `https://streams.<DOMAIN>/api/v1/health` | AIOStreams, including the database |
 | `https://meta.<DOMAIN>/health/ready` | AIOMetadata readiness |
-| `https://manage.<DOMAIN>/healthz` | aio-manager (assumes the app serves this path) |
+| `https://manage.<DOMAIN>/healthz` | aio-manager |
 
 Also watch certificate expiry on all three hosts. Caddy renews at about 30 days left, so an alert at 14 days means renewal is broken.
 
