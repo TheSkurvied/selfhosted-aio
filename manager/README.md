@@ -1,42 +1,56 @@
-# sv
+# AIO Manager
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+A small self-hosted admin app that manages the **AIOStreams** and **AIOMetadata** configs of everyone you share your Stremio setup with. You build templates once, give each person their own overrides and debrid keys, push to both addons, spot configs that were changed somewhere else, and send each person a private install page with a QR code.
 
-## Creating a project
+Design notes: `ARCHITECTURE.md` (build contract), `../docs/03-management-ui.md` (spec), `src/lib/ui/README.md` (Notion-style design system). Screenshots are in `docs/screenshots/pages/`.
 
-If you're seeing this, you've probably already done this step. Congrats!
+## Features
 
-```sh
-# create a new project
-npx sv create my-app
+- **People:** one AIOStreams and one AIOMetadata config per person. Each person gets a template, can be pinned to a version or follow the latest one, and can have JSON merge-patch overrides.
+- **Templates:** each save creates a new version.
+  - "Extract secrets" turns pasted keys into `{{secret:name}}` placeholders.
+  - A dry run shows who would change, and you can then push to everyone.
+- **Secrets:** shared secrets, or per-person ones that take priority over shared ones.
+  - They are encrypted with AES-256-GCM, bound to their row, and never sent back to the browser.
+- **Sync:** each config shows as in sync, pending, drifted, missing or error.
+  - A diff against the remote config is shown with secrets masked.
+  - You can adopt the remote changes as overrides, or overwrite them.
+  - A check runs every 6 hours, and ntfy can alert you on drift.
+- **Rotate or revoke** a person's manifest.
+- **Import** existing configs. For AIOStreams you need the uuid and password. For AIOMetadata you pick from the admin list, and the config's password is reset.
+- **Share pages** at `/s/:token`: Stremio deeplinks, QR codes, and links that can expire or be limited to a number of views.
+- **Admin:** local password with TOTP and recovery codes, or OIDC. There is also an audit log, a jobs view with live updates, a health panel, and an orphan report.
+
+## Running it
+
+In production it runs as the `aio-manager` service in `../deploy/compose.yaml`. See `../docs/02-hosting.md`. On first visit, `https://manage.<domain>/setup` creates the admin account.
+
+Env vars are listed in `ARCHITECTURE.md`. Compose passes them in from `../deploy/.env` (with the `MANAGER_` prefix).
+
+Admin tools inside the container:
+
+```
+# Lost password or authenticator
+docker compose exec aio-manager node build/cli/reset-admin.mjs you@example.com --password --totp
+# New MANAGER_KEY (put the new key in .env, recreate the container, then:)
+docker compose exec -e OLD_MANAGER_KEY=<old> aio-manager node build/cli/rotate-key.mjs --dry-run
 ```
 
-To recreate this project with the same configuration:
+## Development
 
-```sh
-# recreate this project
-npx sv@0.17.1 create --template minimal --types ts --add prettier eslint vitest="usages:unit" sveltekit-adapter="adapter:node" drizzle="database:postgresql+postgresql:postgres.js+docker:no" playwright --no-download-check --install npm manager
+The app needs Node 22, pnpm 10 and Postgres 15 or newer. Use pnpm, not npm.
+
+```
+pnpm install
+cp .env.example .env          # set DATABASE_URL, TEST_DATABASE_URL, MANAGER_KEY, ...
+pnpm dev:mocks                # in-memory AIOStreams/AIOMetadata mocks + vite dev on :5173
+pnpm check && pnpm lint
+pnpm vitest run               # unit + integration (needs TEST_DATABASE_URL)
+pnpm test:e2e                 # Playwright; resets the aio_manager_e2e database
+pnpm screenshots              # e2e + capture docs/screenshots/pages
 ```
 
-## Developing
+Real upstreams for integration runs are covered in `tests/mocks/README.md` (`scripts/upstream/*.sh`, then `RUN_REAL_UPSTREAM=1 pnpm vitest run tests/integration/real-upstream.test.ts`).
 
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
-
-```sh
-npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
-```
-
-## Building
-
-To create a production version of your app:
-
-```sh
-npm run build
-```
-
-You can preview the production build with `npm run preview`.
-
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+- AIOMetadata has been tested end to end against the real service.
+- AIOStreams has only been tested against a mock built from its source code, because its build could not run in the sandbox where this app was developed.
