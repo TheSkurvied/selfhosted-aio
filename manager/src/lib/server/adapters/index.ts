@@ -13,7 +13,8 @@ export * from './http';
 export * from './types';
 export { AiostreamsAdapter, AiometadataAdapter };
 
-let cache: { key: string; aiostreams: AiostreamsAdapter; aiometadata: AiometadataAdapter } | null = null;
+let cache: { key: string; aiostreams: AiostreamsAdapter; aiometadata: AiometadataAdapter } | null =
+	null;
 
 function build() {
 	const key = [

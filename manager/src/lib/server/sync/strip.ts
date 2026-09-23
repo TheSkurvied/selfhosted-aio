@@ -60,7 +60,10 @@ function dropUndefined(v: unknown): unknown {
 }
 
 /** What is sent upstream: the rendered config minus fields we must never send. */
-export function outgoing(kind: InstanceKind, config: Record<string, unknown>): Record<string, unknown> {
+export function outgoing(
+	kind: InstanceKind,
+	config: Record<string, unknown>
+): Record<string, unknown> {
 	const out = clone(config);
 	if (kind === 'aiostreams') {
 		for (const k of ['uuid', 'accessKey', 'encryptedPassword', 'trusted']) delete out[k];

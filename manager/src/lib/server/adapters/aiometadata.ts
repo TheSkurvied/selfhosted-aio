@@ -44,7 +44,11 @@ export class AiometadataAdapter implements UpstreamAdapter {
 		return [this.o.adminKey, this.o.addonPassword, ...extra].filter((s): s is string => !!s);
 	}
 
-	private req(op: string, r: Omit<RequestOptions, 'kind' | 'op' | 'baseUrl'>, extraScrub: string[] = []) {
+	private req(
+		op: string,
+		r: Omit<RequestOptions, 'kind' | 'op' | 'baseUrl'>,
+		extraScrub: string[] = []
+	) {
 		return httpRequest({
 			...r,
 			kind: 'aiometadata',
@@ -55,7 +59,10 @@ export class AiometadataAdapter implements UpstreamAdapter {
 	}
 
 	private admin(op: string, r: Omit<RequestOptions, 'kind' | 'op' | 'baseUrl'>) {
-		return this.req(op, { ...r, headers: { ...(r.headers ?? {}), 'x-admin-key': this.o.adminKey } });
+		return this.req(op, {
+			...r,
+			headers: { ...(r.headers ?? {}), 'x-admin-key': this.o.adminKey }
+		});
 	}
 
 	private error(op: string, r: HttpResult, scrub: string[] = []): UpstreamError {
@@ -65,7 +72,13 @@ export class AiometadataAdapter implements UpstreamAdapter {
 		if (r.status === 401 && /addon password/i.test(msg)) code = 'config';
 		// Missing API keys etc. are validation problems.
 		if (r.status === 400) code = 'invalid';
-		return new UpstreamError('aiometadata', op, code, r.status, sanitize(`${r.status} ${msg}`, this.scrubList(scrub)));
+		return new UpstreamError(
+			'aiometadata',
+			op,
+			code,
+			r.status,
+			sanitize(`${r.status} ${msg}`, this.scrubList(scrub))
+		);
 	}
 
 	manifestUrl(uuid: string): string {
@@ -96,14 +109,22 @@ export class AiometadataAdapter implements UpstreamAdapter {
 			{
 				method: 'POST',
 				path: '/api/config/save',
-				body: { config: outgoing('aiometadata', config), password, addonPassword: this.o.addonPassword ?? '' },
+				body: {
+					config: outgoing('aiometadata', config),
+					password,
+					addonPassword: this.o.addonPassword ?? ''
+				},
 				timeoutMs: 60_000
 			},
 			[password]
 		);
 		const j = r.json as { success?: boolean; userUUID?: string; installUrl?: string } | undefined;
 		if (r.status !== 200 || !j?.success || !j.userUUID) throw this.error('create', r, [password]);
-		return { uuid: j.userUUID, password, manifestUrl: this.publicInstallUrl(j.userUUID, j.installUrl) };
+		return {
+			uuid: j.userUUID,
+			password,
+			manifestUrl: this.publicInstallUrl(j.userUUID, j.installUrl)
+		};
 	}
 
 	async read(uuid: string, password: string): Promise<Config> {
@@ -118,7 +139,8 @@ export class AiometadataAdapter implements UpstreamAdapter {
 		);
 		const j = r.json as { success?: boolean; config?: Config } | undefined;
 		if (r.status !== 200 || !j?.config || typeof j.config !== 'object') {
-			if (r.status === 200) throw new UpstreamError('aiometadata', 'read', 'protocol', 200, 'response lacks config');
+			if (r.status === 200)
+				throw new UpstreamError('aiometadata', 'read', 'protocol', 200, 'response lacks config');
 			const err = this.error('read', r, [password]);
 			if (r.status === 401) {
 				// 401 covers both "gone" and "wrong password" (and an untrusted uuid
@@ -128,7 +150,13 @@ export class AiometadataAdapter implements UpstreamAdapter {
 					(e: unknown) => (e instanceof UpstreamError && e.code === 'not_found' ? false : null)
 				);
 				if (exists === false) {
-					throw new UpstreamError('aiometadata', 'read', 'not_found', 404, 'config not found upstream');
+					throw new UpstreamError(
+						'aiometadata',
+						'read',
+						'not_found',
+						404,
+						'config not found upstream'
+					);
 				}
 			}
 			throw err;
@@ -142,7 +170,11 @@ export class AiometadataAdapter implements UpstreamAdapter {
 			{
 				method: 'PUT',
 				path: `/api/config/update/${encodeURIComponent(uuid)}`,
-				body: { config: outgoing('aiometadata', config), password, addonPassword: this.o.addonPassword ?? '' },
+				body: {
+					config: outgoing('aiometadata', config),
+					password,
+					addonPassword: this.o.addonPassword ?? ''
+				},
 				timeoutMs: 60_000
 			},
 			[password]
@@ -152,7 +184,10 @@ export class AiometadataAdapter implements UpstreamAdapter {
 
 	/** Admin delete: works without the config password. Idempotent. */
 	async delete(uuid: string): Promise<void> {
-		const r = await this.admin('delete', { method: 'DELETE', path: `/api/admin/users/${encodeURIComponent(uuid)}` });
+		const r = await this.admin('delete', {
+			method: 'DELETE',
+			path: `/api/admin/users/${encodeURIComponent(uuid)}`
+		});
 		if (r.status === 200 || r.status === 404) return;
 		throw this.error('delete', r);
 	}
@@ -161,7 +196,11 @@ export class AiometadataAdapter implements UpstreamAdapter {
 		const out: AiometadataAdminUser[] = [];
 		const limit = 500;
 		for (let offset = 0; offset < 1_000_000; offset += limit) {
-			const r = await this.admin('list', { method: 'GET', path: '/api/admin/users', query: { limit, offset } });
+			const r = await this.admin('list', {
+				method: 'GET',
+				path: '/api/admin/users',
+				query: { limit, offset }
+			});
 			if (r.status !== 200) throw this.error('list', r);
 			const j = r.json as { users?: AiometadataAdminUser[]; total?: number } | undefined;
 			const users = j?.users ?? [];
@@ -172,23 +211,36 @@ export class AiometadataAdapter implements UpstreamAdapter {
 	}
 
 	async listRemote(): Promise<RemoteUser[]> {
-		return (await this.adminList()).map((u) => ({ uuid: u.uuid, createdAt: u.created_at, lastUpdated: u.last_updated }));
+		return (await this.adminList()).map((u) => ({
+			uuid: u.uuid,
+			createdAt: u.created_at,
+			lastUpdated: u.last_updated
+		}));
 	}
 
 	async adminDetail(uuid: string): Promise<Record<string, unknown>> {
-		const r = await this.admin('detail', { method: 'GET', path: `/api/admin/users/${encodeURIComponent(uuid)}` });
+		const r = await this.admin('detail', {
+			method: 'GET',
+			path: `/api/admin/users/${encodeURIComponent(uuid)}`
+		});
 		if (r.status !== 200) throw this.error('detail', r);
 		return ((r.json as { user?: Record<string, unknown> })?.user ?? {}) as Record<string, unknown>;
 	}
 
 	/** Full export. Contains plain-text keys: never log or return it. */
 	async adminExport(): Promise<Array<{ uuid: string; config: Config }>> {
-		const r = await this.admin('export', { method: 'GET', path: '/api/admin/users/export', timeoutMs: 60_000 });
+		const r = await this.admin('export', {
+			method: 'GET',
+			path: '/api/admin/users/export',
+			timeoutMs: 60_000
+		});
 		if (r.status !== 200) throw this.error('export', r);
-		return ((r.json as { users?: Array<{ uuid: string; config: Config }> })?.users ?? []).map((u) => ({
-			uuid: u.uuid,
-			config: u.config
-		}));
+		return ((r.json as { users?: Array<{ uuid: string; config: Config }> })?.users ?? []).map(
+			(u) => ({
+				uuid: u.uuid,
+				config: u.config
+			})
+		);
 	}
 
 	async resetPassword(uuid: string, newPassword: string): Promise<void> {
@@ -218,7 +270,12 @@ export class AiometadataAdapter implements UpstreamAdapter {
 				}
 				checks.push({ endpoint: path, ok, latencyMs: Date.now() - started, detail });
 			} catch (e) {
-				checks.push({ endpoint: path, ok: false, latencyMs: Date.now() - started, detail: (e as Error).message });
+				checks.push({
+					endpoint: path,
+					ok: false,
+					latencyMs: Date.now() - started,
+					detail: (e as Error).message
+				});
 			}
 		}
 		return { ok: checks.every((c) => c.ok), version, checks };

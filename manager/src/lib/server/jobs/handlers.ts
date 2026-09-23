@@ -39,7 +39,10 @@ export type Handler = (job: Job, ctx: JobContext) => Promise<string | void>;
 
 async function personName(personId: string | null): Promise<string> {
 	if (!personId) return 'unknown';
-	const [p] = await db.select({ n: t.people.displayName }).from(t.people).where(eq(t.people.id, personId));
+	const [p] = await db
+		.select({ n: t.people.displayName })
+		.from(t.people)
+		.where(eq(t.people.id, personId));
 	return p?.n ?? 'unknown';
 }
 
@@ -58,12 +61,19 @@ async function loadRendered(personId: string, kind: InstanceKind) {
 }
 
 function assertRenderable(r: RenderedBinding) {
-	if (r.missingSecrets.length) throw new PermanentJobError(`missing secrets: ${r.missingSecrets.join(', ')}`);
-	if (r.errors.length) throw new PermanentJobError(`invalid config: ${r.errors.slice(0, 3).join('; ')}`);
+	if (r.missingSecrets.length)
+		throw new PermanentJobError(`missing secrets: ${r.missingSecrets.join(', ')}`);
+	if (r.errors.length)
+		throw new PermanentJobError(`invalid config: ${r.errors.slice(0, 3).join('; ')}`);
 }
 
 /** Store a failure on the account without leaking secret values. */
-async function recordAccountError(accountId: string, err: unknown, scrub: string[], checkStatus?: CheckStatus) {
+async function recordAccountError(
+	accountId: string,
+	err: unknown,
+	scrub: string[],
+	checkStatus?: CheckStatus
+) {
 	const message = sanitize(err instanceof Error ? err.message : String(err), scrub);
 	await db
 		.update(t.accounts)
@@ -73,7 +83,14 @@ async function recordAccountError(accountId: string, err: unknown, scrub: string
 
 function rethrowSanitized(err: unknown, scrub: string[]): never {
 	if (err instanceof UpstreamError) {
-		const e = new UpstreamError(err.kind, err.op, err.code, err.status, sanitize(err.message.replace(`${err.kind} ${err.op}: `, ''), scrub), err.retryAfterMs);
+		const e = new UpstreamError(
+			err.kind,
+			err.op,
+			err.code,
+			err.status,
+			sanitize(err.message.replace(`${err.kind} ${err.op}: `, ''), scrub),
+			err.retryAfterMs
+		);
 		throw e;
 	}
 	if (err instanceof PermanentJobError) throw new PermanentJobError(sanitize(err.message, scrub));
@@ -103,7 +120,12 @@ const push: Handler = async (job, ctx) => {
 					// remember the failure so the binding shows "error"
 					const [row] = await db
 						.insert(t.accounts)
-						.values({ bindingId: b.id, instanceId: b.instanceId, state: 'active', checkStatus: 'error' })
+						.values({
+							bindingId: b.id,
+							instanceId: b.instanceId,
+							state: 'active',
+							checkStatus: 'error'
+						})
 						.returning();
 					acc = row;
 				}
@@ -141,7 +163,9 @@ const push: Handler = async (job, ctx) => {
 			} catch (e) {
 				if (e instanceof UpstreamError && e.isMissing) {
 					await recordAccountError(acc.id, e, scrub, 'missing');
-					throw new PermanentJobError('config is missing upstream (deleted or password changed); rotate to re-create it');
+					throw new PermanentJobError(
+						'config is missing upstream (deleted or password changed); rotate to re-create it'
+					);
 				}
 				throw e;
 			}

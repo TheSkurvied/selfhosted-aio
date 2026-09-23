@@ -80,9 +80,13 @@ async function execute(job: Job) {
 			lastAttempt,
 			progress: (m) => setProgress(job.id, m)
 		});
-		await finishJob(job.id, { status: 'done', progress: typeof result === 'string' ? result : null });
+		await finishJob(job.id, {
+			status: 'done',
+			progress: typeof result === 'string' ? result : null
+		});
 	} catch (err) {
-		const transient = err instanceof UpstreamError ? err.transient : !(err instanceof PermanentJobError);
+		const transient =
+			err instanceof UpstreamError ? err.transient : !(err instanceof PermanentJobError);
 		const message = sanitize(err instanceof Error ? err.message : String(err), await scrubValues());
 		if (transient && !lastAttempt) {
 			const retryAfter = err instanceof UpstreamError ? err.retryAfterMs : undefined;
@@ -96,7 +100,12 @@ async function execute(job: Job) {
 			setTimeout(poke, delay + 10).unref?.();
 		} else {
 			await finishJob(job.id, { status: 'failed', error: message });
-			log.warn('job failed', { jobId: job.id, type: job.type, attempts: job.attempts, error: message });
+			log.warn('job failed', {
+				jobId: job.id,
+				type: job.type,
+				attempts: job.attempts,
+				error: message
+			});
 		}
 	}
 }
@@ -121,7 +130,9 @@ async function loop() {
 		}
 		active++;
 		const p = execute(job)
-			.catch((err) => log.error('job execution crashed', { jobId: job!.id, error: (err as Error).message }))
+			.catch((err) =>
+				log.error('job execution crashed', { jobId: job!.id, error: (err as Error).message })
+			)
 			.finally(() => {
 				active--;
 				inflight.delete(p);

@@ -35,6 +35,7 @@ This file is the shared contract for everyone building the app. The product spec
 | `NTFY_URL` | no | e.g. `https://ntfy.sh/my-topic`. Drift and missing notifications are POSTed here. |
 | `CHECK_INTERVAL_HOURS` | no | Default 6. Set to 0 to disable scheduled checks. |
 | `LOG_LEVEL` | no | Default `info`. |
+| `AIOSTREAMS_USER_API_LIMIT` | no | Client-side throttle for AIOStreams `/api/v1/user` calls, written `max/seconds`. The default `5/5` matches the upstream default; use `off` if you raised the limit upstream. |
 
 **Instances come from env only; there is no editing in the UI.**
 - At boot the app upserts two rows into `instances`, one for each kind.

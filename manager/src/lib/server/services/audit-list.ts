@@ -7,7 +7,8 @@ export async function listAudit(
 ): Promise<AuditRow[]> {
 	const limit = Math.min(Math.max(q.limit ?? 100, 1), 1000);
 	const conds: SQL[] = [];
-	if (q.personId) conds.push(and(eq(t.auditLog.targetType, 'person'), eq(t.auditLog.targetId, q.personId))!);
+	if (q.personId)
+		conds.push(and(eq(t.auditLog.targetType, 'person'), eq(t.auditLog.targetId, q.personId))!);
 	if (q.action) {
 		// "binding" matches binding.push, binding.create, ... ; exact otherwise
 		conds.push(
@@ -17,11 +18,14 @@ export async function listAudit(
 		);
 	}
 	if (q.before) {
-		let before: Date | null = null;
+		let before: Date | null;
 		const d = new Date(q.before);
 		if (!Number.isNaN(d.getTime()) && /\d{4}-\d{2}-\d{2}/.test(q.before)) before = d;
 		else {
-			const [row] = await db.select({ at: t.auditLog.at }).from(t.auditLog).where(eq(t.auditLog.id, q.before));
+			const [row] = await db
+				.select({ at: t.auditLog.at })
+				.from(t.auditLog)
+				.where(eq(t.auditLog.id, q.before));
 			before = row?.at ?? null;
 		}
 		if (before) conds.push(lt(t.auditLog.at, before));

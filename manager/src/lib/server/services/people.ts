@@ -17,7 +17,6 @@ import {
 	assertKind,
 	instanceRows,
 	KIND_LABEL,
-	KINDS,
 	openAccount,
 	renderBinding,
 	requireBinding,
@@ -39,11 +38,16 @@ async function requirePerson(id: string) {
 }
 
 /** Binding summaries for many people, keyed by personId. */
-async function summaries(personIds: string[]): Promise<Map<string, Record<InstanceKind, BindingSummary | null>>> {
+async function summaries(
+	personIds: string[]
+): Promise<Map<string, Record<InstanceKind, BindingSummary | null>>> {
 	const out = new Map<string, Record<InstanceKind, BindingSummary | null>>();
 	for (const id of personIds) out.set(id, { aiostreams: null, aiometadata: null });
 	if (personIds.length === 0) return out;
-	const bindings = await db.select().from(t.personBindings).where(inArray(t.personBindings.personId, personIds));
+	const bindings = await db
+		.select()
+		.from(t.personBindings)
+		.where(inArray(t.personBindings.personId, personIds));
 	const insts = await instanceRows();
 	const kindById = new Map([...insts].map(([k, r]) => [r.id, k]));
 	const tpls = bindings.length
@@ -70,7 +74,8 @@ async function summaries(personIds: string[]): Promise<Map<string, Record<Instan
 
 export async function listPeople(q: { search?: string; tag?: string } = {}): Promise<PersonRow[]> {
 	const conds = [];
-	if (q.search?.trim()) conds.push(ilike(t.people.displayName, `%${q.search.trim().replace(/[%_\\]/g, '\\$&')}%`));
+	if (q.search?.trim())
+		conds.push(ilike(t.people.displayName, `%${q.search.trim().replace(/[%_\\]/g, '\\$&')}%`));
 	if (q.tag?.trim()) conds.push(sql`${q.tag.trim()} = any(${t.people.tags})`);
 	const people = await db
 		.select()
@@ -92,9 +97,15 @@ export async function getPerson(id: string): Promise<PersonDetail> {
 	const p = await requirePerson(id);
 	const insts = await instanceRows();
 	const kindById = new Map([...insts].map(([k, r]) => [r.id, k]));
-	const bindings = await db.select().from(t.personBindings).where(eq(t.personBindings.personId, id));
+	const bindings = await db
+		.select()
+		.from(t.personBindings)
+		.where(eq(t.personBindings.personId, id));
 	const st = await statusesFor(bindings);
-	const detail: Record<InstanceKind, BindingDetail | null> = { aiostreams: null, aiometadata: null };
+	const detail: Record<InstanceKind, BindingDetail | null> = {
+		aiostreams: null,
+		aiometadata: null
+	};
 	const needed = new Set<string>();
 	for (const b of bindings) {
 		const kind = kindById.get(b.instanceId);
@@ -102,7 +113,10 @@ export async function getPerson(id: string): Promise<PersonDetail> {
 		const s = st.get(b.id)!;
 		const [tpl] = await db.select().from(t.templates).where(eq(t.templates.id, b.templateId));
 		const [cur] = tpl?.currentVersionId
-			? await db.select().from(t.templateVersions).where(eq(t.templateVersions.id, tpl.currentVersionId))
+			? await db
+					.select()
+					.from(t.templateVersions)
+					.where(eq(t.templateVersions.id, tpl.currentVersionId))
 			: [];
 		let renderedVersion: number | null = null;
 		if (s.account?.renderedFromVersionId) {
@@ -121,7 +135,8 @@ export async function getPerson(id: string): Promise<PersonDetail> {
 			}
 		}
 		if (s.version) {
-			for (const n of namesIn(applyMergePatch(s.version.bodyJson, b.overridesJson ?? {}))) needed.add(n);
+			for (const n of namesIn(applyMergePatch(s.version.bodyJson, b.overridesJson ?? {})))
+				needed.add(n);
 		}
 		detail[kind] = {
 			id: b.id,
@@ -150,14 +165,28 @@ export async function getPerson(id: string): Promise<PersonDetail> {
 	}
 	const sec = await secretRows(id);
 	const secrets = [
-		...[...sec.person.values()].map((s) => ({ name: s.name, scope: 'person' as const, hint: s.hint, updatedAt: s.updatedAt })),
+		...[...sec.person.values()].map((s) => ({
+			name: s.name,
+			scope: 'person' as const,
+			hint: s.hint,
+			updatedAt: s.updatedAt
+		})),
 		...[...sec.shared.values()]
 			.filter((s) => needed.has(s.name))
-			.map((s) => ({ name: s.name, scope: 'shared' as const, hint: s.hint, updatedAt: s.updatedAt }))
+			.map((s) => ({
+				name: s.name,
+				scope: 'shared' as const,
+				hint: s.hint,
+				updatedAt: s.updatedAt
+			}))
 	].sort((a, b) => a.name.localeCompare(b.name) || a.scope.localeCompare(b.scope));
 	const requiredSecrets = [...needed].sort().map((name) => ({
 		name,
-		satisfiedBy: sec.person.has(name) ? ('person' as const) : sec.shared.has(name) ? ('shared' as const) : null
+		satisfiedBy: sec.person.has(name)
+			? ('person' as const)
+			: sec.shared.has(name)
+				? ('shared' as const)
+				: null
 	}));
 	const tokens = await db
 		.select()
@@ -200,7 +229,13 @@ export async function createPerson(
 		notes: String(input.notes ?? ''),
 		tags: cleanTags(input.tags)
 	});
-	await audit({ actor, action: 'person.create', targetType: 'person', targetId: id, summary: `Created person ${displayName}` });
+	await audit({
+		actor,
+		action: 'person.create',
+		targetType: 'person',
+		targetId: id,
+		summary: `Created person ${displayName}`
+	});
 	return { id };
 }
 
@@ -251,26 +286,53 @@ async function retireBindingAccounts(
 	const accs = await db
 		.select()
 		.from(t.accounts)
-		.where(and(eq(t.accounts.bindingId, b.id), inArray(t.accounts.state, ['active', 'rotating', 'error'])));
+		.where(
+			and(
+				eq(t.accounts.bindingId, b.id),
+				inArray(t.accounts.state, ['active', 'rotating', 'error'])
+			)
+		);
 	const jobIds: string[] = [];
 	for (const a of accs) {
-		await db.update(t.accounts).set({ state: 'retired', retiredAt: new Date() }).where(eq(t.accounts.id, a.id));
+		await db
+			.update(t.accounts)
+			.set({ state: 'retired', retiredAt: new Date() })
+			.where(eq(t.accounts.id, a.id));
 		if (deleteUpstream && a.remoteUuid) {
 			jobIds.push(
-				await enqueue({ type: 'delete', createdBy: actor, personId: b.personId, kind, accountId: a.id, payload: { accountId: a.id } })
+				await enqueue({
+					type: 'delete',
+					createdBy: actor,
+					personId: b.personId,
+					kind,
+					accountId: a.id,
+					payload: { accountId: a.id }
+				})
 			);
 		}
 	}
 	return jobIds;
 }
 
-export async function deletePerson(actor: string, id: string, opts: { deleteUpstream: boolean }): Promise<void> {
+export async function deletePerson(
+	actor: string,
+	id: string,
+	opts: { deleteUpstream: boolean }
+): Promise<void> {
 	const p = await requirePerson(id);
 	const insts = await instanceRows();
 	const kindById = new Map([...insts].map(([k, r]) => [r.id, k]));
-	const bindings = await db.select().from(t.personBindings).where(eq(t.personBindings.personId, id));
+	const bindings = await db
+		.select()
+		.from(t.personBindings)
+		.where(eq(t.personBindings.personId, id));
 	for (const b of bindings) {
-		await retireBindingAccounts(actor, b, !!opts.deleteUpstream, kindById.get(b.instanceId) ?? 'aiostreams');
+		await retireBindingAccounts(
+			actor,
+			b,
+			!!opts.deleteUpstream,
+			kindById.get(b.instanceId) ?? 'aiostreams'
+		);
 	}
 	// Retired accounts keep their row (binding_id goes null) so the orphan
 	// report and the queued delete jobs still find them.
@@ -294,12 +356,20 @@ export async function setBinding(
 	const p = await requirePerson(personId);
 	const [tpl] = await db.select().from(t.templates).where(eq(t.templates.id, input.templateId));
 	if (!tpl) throw notFound('template');
-	if (tpl.kind !== kind) throw new ServiceError(`template ${tpl.name} is for ${KIND_LABEL[tpl.kind]}, not ${KIND_LABEL[kind]}`);
+	if (tpl.kind !== kind)
+		throw new ServiceError(
+			`template ${tpl.name} is for ${KIND_LABEL[tpl.kind]}, not ${KIND_LABEL[kind]}`
+		);
 	if (input.pinnedVersionId) {
 		const [v] = await db
 			.select()
 			.from(t.templateVersions)
-			.where(and(eq(t.templateVersions.id, input.pinnedVersionId), eq(t.templateVersions.templateId, tpl.id)));
+			.where(
+				and(
+					eq(t.templateVersions.id, input.pinnedVersionId),
+					eq(t.templateVersions.templateId, tpl.id)
+				)
+			);
 		if (!v) throw new ServiceError('pinned version does not belong to this template');
 	}
 	const overrides = input.overrides ?? {};
@@ -309,10 +379,13 @@ export async function setBinding(
 		.select()
 		.from(t.personBindings)
 		.where(and(eq(t.personBindings.personId, personId), eq(t.personBindings.instanceId, inst.id)));
-	const paths = diffPaths(existing?.overridesJson ?? {}, overrides).map((c) => `overrides.${c.path}`);
+	const paths = diffPaths(existing?.overridesJson ?? {}, overrides).map(
+		(c) => `overrides.${c.path}`
+	);
 	if (existing) {
 		if (existing.templateId !== tpl.id) paths.unshift('templateId');
-		if (existing.pinnedVersionId !== (input.pinnedVersionId ?? null)) paths.unshift('pinnedVersionId');
+		if (existing.pinnedVersionId !== (input.pinnedVersionId ?? null))
+			paths.unshift('pinnedVersionId');
 		await db
 			.update(t.personBindings)
 			.set({
@@ -379,7 +452,11 @@ export async function renderPreview(
 export async function diffRemote(
 	personId: string,
 	kindIn: InstanceKind
-): Promise<{ changes: Array<{ path: string; kind: 'added' | 'removed' | 'changed' }>; maskedRemote: object; maskedDesired: object }> {
+): Promise<{
+	changes: Array<{ path: string; kind: 'added' | 'removed' | 'changed' }>;
+	maskedRemote: object;
+	maskedDesired: object;
+}> {
 	const kind = assertKind(kindIn);
 	const b = await requireBinding(personId, kind);
 	const acc = await activeAccount(b.id);
@@ -403,5 +480,3 @@ export async function diffRemote(
 		maskedDesired: maskConfig(sd, values) as object
 	};
 }
-
-export { KINDS };

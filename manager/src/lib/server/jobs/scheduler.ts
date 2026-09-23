@@ -36,7 +36,9 @@ export async function sampleHealth(): Promise<void> {
 			log.warn('health sample failed', { kind, error: (err as Error).message });
 		}
 	}
-	await db.delete(t.healthSamples).where(lt(t.healthSamples.at, new Date(Date.now() - HEALTH_KEEP_MS)));
+	await db
+		.delete(t.healthSamples)
+		.where(lt(t.healthSamples.at, new Date(Date.now() - HEALTH_KEEP_MS)));
 }
 
 export async function startScheduler(): Promise<void> {
@@ -54,7 +56,9 @@ export async function startScheduler(): Promise<void> {
 		timers.push(t1);
 	}
 	const t2 = setInterval(() => {
-		sampleHealth().catch((err) => log.warn('health sampling failed', { error: (err as Error).message }));
+		sampleHealth().catch((err) =>
+			log.warn('health sampling failed', { error: (err as Error).message })
+		);
 	}, HEALTH_EVERY_MS);
 	t2.unref();
 	timers.push(t2);

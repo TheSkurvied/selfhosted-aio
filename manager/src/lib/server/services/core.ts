@@ -19,13 +19,7 @@ import { render, type RenderResult } from '../sync/render';
 import { notFound, ServiceError } from './errors';
 
 export type SyncStatus =
-	| 'in_sync'
-	| 'pending'
-	| 'drifted'
-	| 'missing'
-	| 'error'
-	| 'unbound'
-	| 'never_pushed';
+	'in_sync' | 'pending' | 'drifted' | 'missing' | 'error' | 'unbound' | 'never_pushed';
 
 export const SYNC_STATUSES: readonly SyncStatus[] = [
 	'in_sync',
@@ -40,7 +34,8 @@ export const SYNC_STATUSES: readonly SyncStatus[] = [
 export const KINDS: readonly InstanceKind[] = ['aiostreams', 'aiometadata'];
 
 export function assertKind(kind: string): InstanceKind {
-	if (kind !== 'aiostreams' && kind !== 'aiometadata') throw new ServiceError(`unknown instance kind: ${kind}`, 400);
+	if (kind !== 'aiostreams' && kind !== 'aiometadata')
+		throw new ServiceError(`unknown instance kind: ${kind}`, 400);
 	return kind;
 }
 
@@ -90,7 +85,10 @@ export async function secretRows(personId: string | null): Promise<SecretScopeMa
 		.from(t.secrets)
 		.where(
 			personId
-				? or(eq(t.secrets.scope, 'shared'), and(eq(t.secrets.scope, 'person'), eq(t.secrets.personId, personId)))
+				? or(
+						eq(t.secrets.scope, 'shared'),
+						and(eq(t.secrets.scope, 'person'), eq(t.secrets.personId, personId))
+					)
 				: eq(t.secrets.scope, 'shared')
 		);
 	const out: SecretScopeMap = { person: new Map(), shared: new Map() };
@@ -99,7 +97,10 @@ export async function secretRows(personId: string | null): Promise<SecretScopeMa
 }
 
 /** Lookup function for render(): person secret first, then shared. Also returns every value used (for masking/scrubbing). */
-export function secretLookup(m: SecretScopeMap): { lookup: (name: string) => string | undefined; values: () => string[] } {
+export function secretLookup(m: SecretScopeMap): {
+	lookup: (name: string) => string | undefined;
+	values: () => string[];
+} {
 	const cache = new Map<string, string>();
 	const lookup = (name: string) => {
 		if (cache.has(name)) return cache.get(name);
@@ -164,7 +165,11 @@ export async function upsertSecret(
 
 // ---------------------------------------------------------------- accounts
 
-export type AccountCreds = { password: string | null; manifestSecret: string | null; manifestUrl: string | null };
+export type AccountCreds = {
+	password: string | null;
+	manifestSecret: string | null;
+	manifestUrl: string | null;
+};
 
 export function openAccount(a: Account): AccountCreds {
 	const o = (col: 'password_enc' | 'manifest_secret_enc' | 'manifest_url_enc', v: string | null) =>
@@ -181,7 +186,8 @@ export function sealAccountCreds(accountId: string, c: Partial<AccountCreds>) {
 		v ? seal(v, aadFor('accounts', col, accountId)) : null;
 	const out: Partial<Pick<Account, 'passwordEnc' | 'manifestSecretEnc' | 'manifestUrlEnc'>> = {};
 	if (c.password !== undefined) out.passwordEnc = s('password_enc', c.password);
-	if (c.manifestSecret !== undefined) out.manifestSecretEnc = s('manifest_secret_enc', c.manifestSecret);
+	if (c.manifestSecret !== undefined)
+		out.manifestSecretEnc = s('manifest_secret_enc', c.manifestSecret);
 	if (c.manifestUrl !== undefined) out.manifestUrlEnc = s('manifest_url_enc', c.manifestUrl);
 	return out;
 }
@@ -210,7 +216,10 @@ export async function activeAccountsFor(bindingIds: string[]): Promise<Map<strin
 
 // ---------------------------------------------------------------- bindings + rendering
 
-export async function bindingFor(personId: string, kind: InstanceKind): Promise<PersonBinding | null> {
+export async function bindingFor(
+	personId: string,
+	kind: InstanceKind
+): Promise<PersonBinding | null> {
 	const inst = await instanceRow(kind);
 	const [row] = await db
 		.select()
@@ -225,7 +234,9 @@ export async function requireBinding(personId: string, kind: InstanceKind): Prom
 	return b;
 }
 
-export async function effectiveVersion(b: Pick<PersonBinding, 'templateId' | 'pinnedVersionId'>): Promise<TemplateVersion> {
+export async function effectiveVersion(
+	b: Pick<PersonBinding, 'templateId' | 'pinnedVersionId'>
+): Promise<TemplateVersion> {
 	let versionId = b.pinnedVersionId;
 	if (!versionId) {
 		const [tpl] = await db.select().from(t.templates).where(eq(t.templates.id, b.templateId));
@@ -233,7 +244,10 @@ export async function effectiveVersion(b: Pick<PersonBinding, 'templateId' | 'pi
 		versionId = tpl.currentVersionId;
 	}
 	if (!versionId) throw new ServiceError('template has no versions', 409);
-	const [v] = await db.select().from(t.templateVersions).where(eq(t.templateVersions.id, versionId));
+	const [v] = await db
+		.select()
+		.from(t.templateVersions)
+		.where(eq(t.templateVersions.id, versionId));
 	if (!v) throw notFound('template version');
 	return v;
 }
@@ -245,7 +259,10 @@ export type RenderedBinding = RenderResult & {
 	secretValues: () => string[];
 };
 
-export async function renderBinding(b: PersonBinding, kind?: InstanceKind): Promise<RenderedBinding> {
+export async function renderBinding(
+	b: PersonBinding,
+	kind?: InstanceKind
+): Promise<RenderedBinding> {
 	const k = kind ?? (await kindOfInstance(b.instanceId));
 	const version = await effectiveVersion(b);
 	const secrets = secretLookup(await secretRows(b.personId));
@@ -274,10 +291,28 @@ export function deriveStatus(account: Account | null, desiredHash: string | null
  * Status for many bindings at once. Renders every binding (secrets are
  * decrypted in memory only) so "pending" is exact.
  */
-export async function statusesFor(
-	bindings: PersonBinding[]
-): Promise<Map<string, { status: SyncStatus; version: TemplateVersion | null; account: Account | null; desiredHash: string | null; missingSecrets: string[] }>> {
-	const out = new Map<string, { status: SyncStatus; version: TemplateVersion | null; account: Account | null; desiredHash: string | null; missingSecrets: string[] }>();
+export async function statusesFor(bindings: PersonBinding[]): Promise<
+	Map<
+		string,
+		{
+			status: SyncStatus;
+			version: TemplateVersion | null;
+			account: Account | null;
+			desiredHash: string | null;
+			missingSecrets: string[];
+		}
+	>
+> {
+	const out = new Map<
+		string,
+		{
+			status: SyncStatus;
+			version: TemplateVersion | null;
+			account: Account | null;
+			desiredHash: string | null;
+			missingSecrets: string[];
+		}
+	>();
 	if (bindings.length === 0) return out;
 	const accounts = await activeAccountsFor(bindings.map((b) => b.id));
 	const insts = await instanceRows();
@@ -290,7 +325,10 @@ export async function statusesFor(
 	for (const b of bindings) if (b.pinnedVersionId) versionIds.add(b.pinnedVersionId);
 	for (const tp of tpls) if (tp.currentVersionId) versionIds.add(tp.currentVersionId);
 	const versions = versionIds.size
-		? await db.select().from(t.templateVersions).where(inArray(t.templateVersions.id, [...versionIds]))
+		? await db
+				.select()
+				.from(t.templateVersions)
+				.where(inArray(t.templateVersions.id, [...versionIds]))
 		: [];
 	const vById = new Map(versions.map((v) => [v.id, v]));
 	const tById = new Map(tpls.map((tp) => [tp.id, tp]));
@@ -318,14 +356,25 @@ export async function statusesFor(
 		if (version) {
 			const { lookup } = secretLookup({ person: byPerson.get(b.personId) ?? new Map(), shared });
 			try {
-				const r = render({ kind, base: version.bodyJson, overrides: b.overridesJson ?? {}, lookup });
+				const r = render({
+					kind,
+					base: version.bodyJson,
+					overrides: b.overridesJson ?? {},
+					lookup
+				});
 				desiredHash = r.desiredHash;
 				missingSecrets = r.missingSecrets;
 			} catch {
 				desiredHash = null;
 			}
 		}
-		out.set(b.id, { status: deriveStatus(account, desiredHash), version, account, desiredHash, missingSecrets });
+		out.set(b.id, {
+			status: deriveStatus(account, desiredHash),
+			version,
+			account,
+			desiredHash,
+			missingSecrets
+		});
 	}
 	return out;
 }

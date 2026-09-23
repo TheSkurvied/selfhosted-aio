@@ -51,7 +51,10 @@ export function sanitize(message: string, scrub: Iterable<string> = []): string 
 	values.sort((a, b) => b.length - a.length);
 	for (const s of values) out = out.split(s).join('[redacted]');
 	out = out
-		.replace(/(authorization|cookie|x-admin-key)\s*[:=]\s*\S+/gi, '$1: [redacted]')
+		.replace(
+			/(authorization|cookie|x-admin-key)\s*[:=]\s*(?:(?:Basic|Bearer)\s+)?\S+/gi,
+			'$1: [redacted]'
+		)
 		.replace(/\b(Basic|Bearer)\s+[A-Za-z0-9+/=._-]{8,}/g, '$1 [redacted]')
 		.replace(/\s+/g, ' ')
 		.trim();
@@ -103,7 +106,8 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 export async function httpRequest(o: RequestOptions): Promise<HttpResult> {
 	const url = new URL(o.baseUrl.replace(/\/+$/, '') + o.path);
-	for (const [k, v] of Object.entries(o.query ?? {})) if (v !== undefined) url.searchParams.set(k, String(v));
+	for (const [k, v] of Object.entries(o.query ?? {}))
+		if (v !== undefined) url.searchParams.set(k, String(v));
 	const headers: Record<string, string> = { accept: 'application/json', ...(o.headers ?? {}) };
 	let body: string | undefined;
 	if (o.body !== undefined) {
@@ -126,10 +130,22 @@ export async function httpRequest(o: RequestOptions): Promise<HttpResult> {
 		} catch (err) {
 			const e = err as Error & { cause?: { code?: string } };
 			if (e.name === 'TimeoutError' || e.name === 'AbortError') {
-				throw new UpstreamError(o.kind, o.op, 'timeout', null, `timed out after ${Math.round((o.timeoutMs ?? DEFAULT_TIMEOUT_MS) / 1000)}s`);
+				throw new UpstreamError(
+					o.kind,
+					o.op,
+					'timeout',
+					null,
+					`timed out after ${Math.round((o.timeoutMs ?? DEFAULT_TIMEOUT_MS) / 1000)}s`
+				);
 			}
 			const code = e.cause?.code ?? e.name;
-			throw new UpstreamError(o.kind, o.op, 'network', null, sanitize(`unreachable (${code})`, o.scrub));
+			throw new UpstreamError(
+				o.kind,
+				o.op,
+				'network',
+				null,
+				sanitize(`unreachable (${code})`, o.scrub)
+			);
 		}
 		const text = o.method === 'HEAD' ? '' : await res.text().catch(() => '');
 		let json: unknown;
@@ -213,7 +229,10 @@ export class Throttle {
 }
 
 /** Parse "max/windowSeconds" (e.g. "5/5"); "0" or "off" disables. */
-export function parseRateSpec(spec: string | undefined, fallback: { max: number; windowMs: number }) {
+export function parseRateSpec(
+	spec: string | undefined,
+	fallback: { max: number; windowMs: number }
+) {
 	if (!spec) return fallback;
 	if (/^(0|off|none)$/i.test(spec.trim())) return { max: 0, windowMs: 0 };
 	const m = /^(\d+)\s*\/\s*(\d+(?:\.\d+)?)$/.exec(spec.trim());

@@ -151,7 +151,10 @@ export async function setProgress(jobId: string, progress: string): Promise<void
 	void emitJob(jobId);
 }
 
-export async function finishJob(jobId: string, patch: { status: JobStatus; error?: string | null; runAfter?: Date; progress?: string | null }) {
+export async function finishJob(
+	jobId: string,
+	patch: { status: JobStatus; error?: string | null; runAfter?: Date; progress?: string | null }
+) {
 	await db
 		.update(t.jobs)
 		.set({
@@ -178,7 +181,8 @@ export async function recoverStaleJobs(): Promise<number> {
 export async function listJobRows(q: { status?: string; limit?: number } = {}): Promise<JobRow[]> {
 	const limit = Math.min(Math.max(q.limit ?? 100, 1), 1000);
 	const statuses = ['queued', 'running', 'done', 'failed'];
-	const where = q.status && statuses.includes(q.status) ? eq(t.jobs.status, q.status as JobStatus) : undefined;
+	const where =
+		q.status && statuses.includes(q.status) ? eq(t.jobs.status, q.status as JobStatus) : undefined;
 	const rows = await db
 		.select({ job: t.jobs, personName: t.people.displayName })
 		.from(t.jobs)
@@ -210,4 +214,3 @@ export async function pendingJobCount(): Promise<number> {
 		.where(inArray(t.jobs.status, ['queued', 'running']));
 	return rows[0]?.n ?? 0;
 }
-

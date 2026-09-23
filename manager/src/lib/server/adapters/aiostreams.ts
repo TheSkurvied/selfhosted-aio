@@ -31,7 +31,11 @@ export type AiostreamsOptions = {
 	loginCooldownMs?: number;
 };
 
-type Envelope = { success?: boolean; data?: unknown; error?: { code?: string; message?: string } | null };
+type Envelope = {
+	success?: boolean;
+	data?: unknown;
+	error?: { code?: string; message?: string } | null;
+};
 
 const b64 = (s: string) => Buffer.from(s, 'utf8').toString('base64');
 
@@ -81,10 +85,23 @@ export class AiostreamsAdapter implements UpstreamAdapter {
 
 	/** Log in with AIOSTREAMS_USERNAME/PASSWORD (single flight). */
 	async login(): Promise<void> {
-		if (!this.hasLogin) throw new UpstreamError('aiostreams', 'login', 'config', null, 'AIOSTREAMS_USERNAME/PASSWORD not configured');
+		if (!this.hasLogin)
+			throw new UpstreamError(
+				'aiostreams',
+				'login',
+				'config',
+				null,
+				'AIOSTREAMS_USERNAME/PASSWORD not configured'
+			);
 		if (!this.loginPromise) {
 			if (Date.now() - this.lastLoginFailedAt < this.loginCooldownMs) {
-				throw new UpstreamError('aiostreams', 'login', 'config', null, 'login failed recently; not retrying yet');
+				throw new UpstreamError(
+					'aiostreams',
+					'login',
+					'config',
+					null,
+					'login failed recently; not retrying yet'
+				);
 			}
 			this.loginPromise = (async () => {
 				this.cookies.clear();
@@ -102,7 +119,13 @@ export class AiostreamsAdapter implements UpstreamAdapter {
 					const err = this.error('login', r, this.scrubList());
 					// bad manager credentials are a configuration problem, not a missing config
 					throw err.code === 'unauthorized'
-						? new UpstreamError('aiostreams', 'login', 'config', r.status, 'manager login rejected (check AIOSTREAMS_USERNAME/PASSWORD)')
+						? new UpstreamError(
+								'aiostreams',
+								'login',
+								'config',
+								r.status,
+								'manager login rejected (check AIOSTREAMS_USERNAME/PASSWORD)'
+							)
 						: err;
 				}
 				this.lastLoginAt = Date.now();
@@ -120,7 +143,13 @@ export class AiostreamsAdapter implements UpstreamAdapter {
 		// A wrong uuid or password is a 400 USER_INVALID_DETAILS upstream.
 		if (env?.error?.code === 'USER_INVALID_DETAILS') code = 'not_found';
 		if (env?.error?.code === 'USER_INVALID_CONFIG') code = 'invalid';
-		return new UpstreamError('aiostreams', op, code, r.status, sanitize(`${r.status} ${upstreamMessage(r)}`, scrub));
+		return new UpstreamError(
+			'aiostreams',
+			op,
+			code,
+			r.status,
+			sanitize(`${r.status} ${upstreamMessage(r)}`, scrub)
+		);
 	}
 
 	/**
@@ -135,7 +164,13 @@ export class AiostreamsAdapter implements UpstreamAdapter {
 	): Promise<HttpResult> {
 		const useSession = session !== 'none' && this.hasLogin;
 		if (session === 'required' && !this.hasLogin) {
-			throw new UpstreamError('aiostreams', op, 'config', null, 'needs AIOSTREAMS_USERNAME/PASSWORD');
+			throw new UpstreamError(
+				'aiostreams',
+				op,
+				'config',
+				null,
+				'needs AIOSTREAMS_USERNAME/PASSWORD'
+			);
 		}
 		if (useSession && this.cookies.size === 0 && session === 'required') await this.login();
 		const throttled = req.path === '/api/v1/user';
@@ -169,7 +204,8 @@ export class AiostreamsAdapter implements UpstreamAdapter {
 	}
 
 	manifestUrl(uuid: string, manifestSecret?: string | null): string {
-		if (!manifestSecret) throw new Error('AIOStreams manifest URL needs the encryptedPassword segment');
+		if (!manifestSecret)
+			throw new Error('AIOStreams manifest URL needs the encryptedPassword segment');
 		return `${this.publicUrl}/stremio/${encodeURIComponent(uuid)}/${encodeURIComponent(manifestSecret)}/manifest.json`;
 	}
 
@@ -178,13 +214,25 @@ export class AiostreamsAdapter implements UpstreamAdapter {
 		const scrub = [password];
 		const r = await this.send(
 			'create',
-			{ method: 'POST', path: '/api/v1/user', body: { config: outgoing('aiostreams', config), password }, timeoutMs: SLOW_TIMEOUT_MS, scrub },
+			{
+				method: 'POST',
+				path: '/api/v1/user',
+				body: { config: outgoing('aiostreams', config), password },
+				timeoutMs: SLOW_TIMEOUT_MS,
+				scrub
+			},
 			this.hasLogin ? 'required' : 'none'
 		);
 		if (r.status !== 201 && r.status !== 200) throw this.error('create', r, scrub);
 		const data = (r.json as Envelope)?.data as { uuid?: string; encryptedPassword?: string } | null;
 		if (!data?.uuid || !data.encryptedPassword) {
-			throw new UpstreamError('aiostreams', 'create', 'protocol', r.status, 'response lacks uuid/encryptedPassword');
+			throw new UpstreamError(
+				'aiostreams',
+				'create',
+				'protocol',
+				r.status,
+				'response lacks uuid/encryptedPassword'
+			);
 		}
 		return {
 			uuid: data.uuid,
@@ -195,7 +243,10 @@ export class AiostreamsAdapter implements UpstreamAdapter {
 	}
 
 	/** Returns the config and the (fresh, random-IV) encryptedPassword segment. */
-	async readWithSecret(uuid: string, password: string): Promise<{ config: Config; encryptedPassword?: string }> {
+	async readWithSecret(
+		uuid: string,
+		password: string
+	): Promise<{ config: Config; encryptedPassword?: string }> {
 		const scrub = [password];
 		const r = await this.send('read', {
 			method: 'GET',
@@ -205,9 +256,18 @@ export class AiostreamsAdapter implements UpstreamAdapter {
 			scrub
 		});
 		if (r.status !== 200) throw this.error('read', r, scrub);
-		const data = (r.json as Envelope)?.data as { userData?: Config; encryptedPassword?: string } | null;
+		const data = (r.json as Envelope)?.data as {
+			userData?: Config;
+			encryptedPassword?: string;
+		} | null;
 		if (!data?.userData || typeof data.userData !== 'object') {
-			throw new UpstreamError('aiostreams', 'read', 'protocol', r.status, 'response lacks userData');
+			throw new UpstreamError(
+				'aiostreams',
+				'read',
+				'protocol',
+				r.status,
+				'response lacks userData'
+			);
 		}
 		return { config: data.userData, encryptedPassword: data.encryptedPassword };
 	}
@@ -234,7 +294,11 @@ export class AiostreamsAdapter implements UpstreamAdapter {
 	}
 
 	async exists(uuid: string): Promise<boolean> {
-		const r = await this.send('exists', { method: 'HEAD', path: '/api/v1/user', query: { uuid } }, 'none');
+		const r = await this.send(
+			'exists',
+			{ method: 'HEAD', path: '/api/v1/user', query: { uuid } },
+			'none'
+		);
 		if (r.status === 200) return true;
 		if (r.status === 400 || r.status === 404 || r.status === 401) return false;
 		throw this.error('exists', r, []);
@@ -272,7 +336,11 @@ export class AiostreamsAdapter implements UpstreamAdapter {
 		for (let page = 1; page < 1000; page++) {
 			const r = await this.send(
 				'list',
-				{ method: 'GET', path: '/api/v1/dashboard/users', query: { page, limit: 200, sort: 'created_at', dir: 'asc' } },
+				{
+					method: 'GET',
+					path: '/api/v1/dashboard/users',
+					query: { page, limit: 200, sort: 'created_at', dir: 'asc' }
+				},
 				'required'
 			);
 			if (r.status !== 200) throw this.error('list', r, []);
@@ -281,7 +349,8 @@ export class AiostreamsAdapter implements UpstreamAdapter {
 				pages?: number;
 			} | null;
 			const items = data?.items ?? [];
-			for (const u of items) out.push({ uuid: u.uuid, createdAt: u.createdAt, lastUpdated: u.updatedAt });
+			for (const u of items)
+				out.push({ uuid: u.uuid, createdAt: u.createdAt, lastUpdated: u.updatedAt });
 			if (items.length === 0 || page >= (data?.pages ?? 1)) break;
 		}
 		return out;
@@ -307,9 +376,19 @@ export class AiostreamsAdapter implements UpstreamAdapter {
 					const v = ((r.json as Envelope)?.data as { version?: string } | null)?.version;
 					if (typeof v === 'string') version = v;
 				}
-				checks.push({ endpoint: path, ok, latencyMs: Date.now() - started, detail: ok ? undefined : `HTTP ${r.status}` });
+				checks.push({
+					endpoint: path,
+					ok,
+					latencyMs: Date.now() - started,
+					detail: ok ? undefined : `HTTP ${r.status}`
+				});
 			} catch (e) {
-				checks.push({ endpoint: path, ok: false, latencyMs: Date.now() - started, detail: (e as Error).message });
+				checks.push({
+					endpoint: path,
+					ok: false,
+					latencyMs: Date.now() - started,
+					detail: (e as Error).message
+				});
 			}
 		}
 		return { ok: checks.every((c) => c.ok), version, checks };

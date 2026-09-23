@@ -57,7 +57,10 @@ function issuesToStrings(issues: z.core.$ZodIssue[]): string[] {
 	});
 }
 
-export function validateTemplateBody(kind: InstanceKind, body: unknown): { ok: boolean; errors: string[] } {
+export function validateTemplateBody(
+	kind: InstanceKind,
+	body: unknown
+): { ok: boolean; errors: string[] } {
 	if (!isPlainObject(body)) return { ok: false, errors: ['body must be a JSON object'] };
 	const errors: string[] = [];
 	if (kind === 'aiostreams') {

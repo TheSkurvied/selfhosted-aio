@@ -97,6 +97,7 @@ export function walkLeaves(
 	segs: PathSeg[] = []
 ): void {
 	if (Array.isArray(v)) v.forEach((x, i) => walkLeaves(x, fn, [...segs, i]));
-	else if (isPlainObject(v)) for (const [k, x] of Object.entries(v)) walkLeaves(x, fn, [...segs, k]);
+	else if (isPlainObject(v))
+		for (const [k, x] of Object.entries(v)) walkLeaves(x, fn, [...segs, k]);
 	else fn(v, segs);
 }

@@ -75,7 +75,10 @@ export function extractSecrets(body: object): { body: object; found: FoundSecret
 }
 
 /** Replace the value at each picked path with `{{secret:name}}`. Unknown paths are ignored. */
-export function applyExtraction(body: object, picks: Array<{ path: string; name: string }>): object {
+export function applyExtraction(
+	body: object,
+	picks: Array<{ path: string; name: string }>
+): object {
 	const out = clone(body);
 	for (const p of picks) {
 		if (!SECRET_NAME.test(p.name)) throw new Error(`invalid secret name: ${p.name}`);

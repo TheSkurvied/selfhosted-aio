@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- tests poke into untyped JSON */
 import { describe, expect, it } from 'vitest';
 import { useTestEnv } from '../testing';
 import {
@@ -33,7 +34,11 @@ describe('merge patch (RFC 7386)', () => {
 		[{ a: 'c' }, { a: ['b'] }, { a: ['b'] }],
 		[{ a: { b: 'c' } }, { a: { b: 'd', c: null } }, { a: { b: 'd' } }],
 		[{ a: [{ b: 'c' }] }, { a: [1] }, { a: [1] }],
-		[['a', 'b'], ['c', 'd'], ['c', 'd']],
+		[
+			['a', 'b'],
+			['c', 'd'],
+			['c', 'd']
+		],
 		[{ a: 'b' }, ['c'], ['c']],
 		[{ a: 'foo' }, null, null],
 		[{ a: 'foo' }, 'bar', 'bar'],
@@ -94,7 +99,10 @@ describe('placeholders', () => {
 	});
 
 	it('reports missing secrets and leaves them in place', () => {
-		const r = substitutePlaceholders({ a: '{{secret:nope}}', b: '{{secret:rd_key}}', c: '{{secret:nope}}' }, lookup);
+		const r = substitutePlaceholders(
+			{ a: '{{secret:nope}}', b: '{{secret:rd_key}}', c: '{{secret:nope}}' },
+			lookup
+		);
 		expect(r.missing).toEqual(['nope']);
 		expect((r.value as Record<string, string>).a).toBe('{{secret:nope}}');
 	});
@@ -106,7 +114,11 @@ describe('placeholders', () => {
 
 	it('extracts required secret names', () => {
 		expect(
-			requiredSecrets({ a: '{{secret:b}}', x: ['{{secret:a}} {{secret:b}}'], k: { '{{secret:key}}': 1 } })
+			requiredSecrets({
+				a: '{{secret:b}}',
+				x: ['{{secret:a}} {{secret:b}}'],
+				k: { '{{secret:key}}': 1 }
+			})
 		).toEqual(['a', 'b']);
 	});
 });
@@ -162,10 +174,9 @@ describe('strip + hash', () => {
 
 describe('masking', () => {
 	it('replaces known secret values (whole and embedded) with hints', () => {
-		const m = maskConfig(
-			{ a: 'RDSECRET123', b: 'url?key=RDSECRET123&x=1', c: 'plain', n: 5 },
-			['RDSECRET123']
-		);
+		const m = maskConfig({ a: 'RDSECRET123', b: 'url?key=RDSECRET123&x=1', c: 'plain', n: 5 }, [
+			'RDSECRET123'
+		]);
 		expect(m).toEqual({ a: '••••T123', b: 'url?key=••••T123&x=1', c: 'plain', n: 5 });
 	});
 
@@ -261,9 +272,14 @@ describe('extractSecrets / applyExtraction', () => {
 	});
 
 	it('de-duplicates names for different values', () => {
-		const r = extractSecrets({ a: { credentials: { apiKey: 'AAAA1' } }, b: { credentials: { apiKey: 'BBBB2' } } });
+		const r = extractSecrets({
+			a: { credentials: { apiKey: 'AAAA1' } },
+			b: { credentials: { apiKey: 'BBBB2' } }
+		});
 		expect(r.found.map((f) => f.suggestedName)).toEqual(['a_api_key', 'b_api_key']);
-		const r2 = extractSecrets({ x: [{ credentials: { token: 'AAAA1' } }, { credentials: { token: 'BBBB2' } }] });
+		const r2 = extractSecrets({
+			x: [{ credentials: { token: 'AAAA1' } }, { credentials: { token: 'BBBB2' } }]
+		});
 		expect(r2.found.map((f) => f.suggestedName)).toEqual(['x_0_token', 'x_1_token']);
 	});
 
@@ -281,9 +297,15 @@ describe('extractSecrets / applyExtraction', () => {
 describe('validateTemplateBody', () => {
 	it('accepts the minimal configs', () => {
 		expect(
-			validateTemplateBody('aiostreams', { presets: [], formatter: { id: 'gdrive' }, sortCriteria: { global: [] } })
+			validateTemplateBody('aiostreams', {
+				presets: [],
+				formatter: { id: 'gdrive' },
+				sortCriteria: { global: [] }
+			})
 		).toEqual({ ok: true, errors: [] });
-		expect(validateTemplateBody('aiometadata', { language: 'en-US', apiKeys: { tmdb: 'x' } })).toEqual({
+		expect(
+			validateTemplateBody('aiometadata', { language: 'en-US', apiKeys: { tmdb: 'x' } })
+		).toEqual({
 			ok: true,
 			errors: []
 		});
@@ -294,7 +316,10 @@ describe('validateTemplateBody', () => {
 			formatter: { id: 'nope' },
 			presets: {},
 			uuid: 'x',
-			services: [{ id: 'realdebrid', credentials: {} }, { id: 'torbox', enabled: false }]
+			services: [
+				{ id: 'realdebrid', credentials: {} },
+				{ id: 'torbox', enabled: false }
+			]
 		});
 		expect(r.ok).toBe(false);
 		expect(r.errors.join('\n')).toMatch(/formatter/);
@@ -308,7 +333,10 @@ describe('validateTemplateBody', () => {
 			formatter: { id: 'gdrive' },
 			presets: [],
 			sortCriteria: { global: [] },
-			services: [{ id: 'realdebrid', credentials: { apiKey: '' } }, { id: 'torbox', enabled: false }]
+			services: [
+				{ id: 'realdebrid', credentials: { apiKey: '' } },
+				{ id: 'torbox', enabled: false }
+			]
 		});
 		expect(r.errors).toEqual(['services[0].credentials: an enabled service needs credentials']);
 	});
@@ -328,7 +356,12 @@ describe('render', () => {
 			sortCriteria: { global: [] },
 			services: [{ id: 'realdebrid', credentials: { apiKey: '{{secret:rd}}' } }]
 		};
-		const r = render({ kind: 'aiostreams', base, overrides: { addonName: 'Bob' }, lookup: (n) => (n === 'rd' ? 'RDKEY' : undefined) });
+		const r = render({
+			kind: 'aiostreams',
+			base,
+			overrides: { addonName: 'Bob' },
+			lookup: (n) => (n === 'rd' ? 'RDKEY' : undefined)
+		});
 		expect(r.missingSecrets).toEqual([]);
 		expect(r.errors).toEqual([]);
 		expect((r.resolved as any).services[0].credentials.apiKey).toBe('RDKEY');
