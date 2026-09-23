@@ -43,9 +43,10 @@ jobs:
       DISABLE_BACKGROUND: '1'
     steps:
       - uses: actions/checkout@v4
+      # Reads the pnpm version from manager/package.json (packageManager).
       - uses: pnpm/action-setup@v4
         with:
-          version: 10
+          package_json_file: manager/package.json
       - uses: actions/setup-node@v4
         with:
           node-version: 22
