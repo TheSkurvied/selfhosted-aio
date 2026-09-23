@@ -12,7 +12,12 @@ import { execSync } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { aiometadataFlow, aiostreamsAuthFlow, aiostreamsFlow, type Flow } from '../../tests/mocks/flows.ts';
+import {
+	aiometadataFlow,
+	aiostreamsAuthFlow,
+	aiostreamsFlow,
+	type Flow
+} from '../../tests/mocks/flows.ts';
 import { runFlow, type FixtureFile } from '../../tests/mocks/runner.ts';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -51,7 +56,9 @@ let mismatches = 0;
 for (const x of exchanges) {
 	const ok = x.response.status === x.expectStatus;
 	if (!ok) mismatches++;
-	console.log(`${ok ? 'ok  ' : 'DIFF'} ${x.name.padEnd(44)} ${x.response.status} (expected ${x.expectStatus})`);
+	console.log(
+		`${ok ? 'ok  ' : 'DIFF'} ${x.name.padEnd(44)} ${x.response.status} (expected ${x.expectStatus})`
+	);
 }
 
 const fixture: FixtureFile = {

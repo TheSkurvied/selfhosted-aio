@@ -164,9 +164,7 @@
 				},
 				"body": {
 					"error": "Missing required API keys: tmdb",
-					"missingKeys": [
-						"tmdb"
-					]
+					"missingKeys": ["tmdb"]
 				}
 			},
 			"expectStatus": 400

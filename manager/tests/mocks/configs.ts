@@ -39,7 +39,9 @@ export const AIOSTREAMS_STARTER_CONFIG = {
 			{ key: 'quality', direction: 'desc' }
 		]
 	},
-	services: [{ id: 'realdebrid', enabled: true, credentials: { apiKey: '{{secret.REALDEBRID_API_KEY}}' } }]
+	services: [
+		{ id: 'realdebrid', enabled: true, credentials: { apiKey: '{{secret.REALDEBRID_API_KEY}}' } }
+	]
 } as const;
 
 /**

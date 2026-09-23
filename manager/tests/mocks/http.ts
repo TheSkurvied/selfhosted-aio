@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- mocks handle arbitrary upstream JSON */
 /** Small shared plumbing for the node:http upstream mocks (no dependencies). */
 import type { IncomingMessage, Server, ServerResponse } from 'node:http';
 import type { AddressInfo } from 'node:net';
@@ -60,7 +61,11 @@ export class RateLimiter {
 	private hits = new Map<string, { count: number; resetAt: number }>();
 
 	/** Returns null when allowed, or seconds until reset when over the limit. */
-	hit(key: string, max: number, windowMs: number): { limited: boolean; remaining: number; resetSec: number } {
+	hit(
+		key: string,
+		max: number,
+		windowMs: number
+	): { limited: boolean; remaining: number; resetSec: number } {
 		const now = Date.now();
 		let h = this.hits.get(key);
 		if (!h || h.resetAt <= now) {
@@ -88,7 +93,12 @@ export interface Req {
 	raw: IncomingMessage;
 }
 
-export function sendJson(res: ServerResponse, status: number, body: unknown, headers: Record<string, string | string[]> = {}) {
+export function sendJson(
+	res: ServerResponse,
+	status: number,
+	body: unknown,
+	headers: Record<string, string | string[]> = {}
+) {
 	const text = body === undefined ? '' : JSON.stringify(body);
 	res.writeHead(status, {
 		'content-type': 'application/json; charset=utf-8',

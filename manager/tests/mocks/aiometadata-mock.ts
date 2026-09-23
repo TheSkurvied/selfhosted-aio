@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- mocks handle arbitrary upstream JSON */
 /**
  * In-memory AIOMetadata mock (node:http, no deps). Mirrors the real routes the
  * manager uses; behaviour is taken from aiometadata@7ef886c and checked against
@@ -14,7 +15,17 @@
  */
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { createServer, type Server } from 'node:http';
-import { applyFault, close, FaultQueue, listen, RateLimiter, readRequest, sendJson, sqliteNow, type Req } from './http.ts';
+import {
+	applyFault,
+	close,
+	FaultQueue,
+	listen,
+	RateLimiter,
+	readRequest,
+	sendJson,
+	sqliteNow,
+	type Req
+} from './http.ts';
 
 export interface AiometadataUser {
 	uuid: string;
@@ -44,6 +55,11 @@ export interface AiometadataMockState {
 	builtInTmdbKey: boolean;
 	/** The load limiter is on by default, as upstream (20 per uuid per minute). */
 	rateLimit: { enabled: boolean; loadPerMinute: number };
+	/**
+	 * false = still booting: everything except /health* answers 503 like the
+	 * readiness gate (addon/lib/lifecycle/readiness.ts:106).
+	 */
+	ready: boolean;
 	faults: FaultQueue;
 	limiter: RateLimiter;
 	/** Every request seen, oldest first (method + path). */
@@ -76,17 +92,23 @@ function missingRequiredKeys(config: any, builtInTmdb: boolean): string[] {
 		['movie', 'series', 'anime'].some((t) => {
 			const p = art[t];
 			if (typeof p === 'string') return p === 'fanart';
-			if (p && typeof p === 'object') return p.poster === 'fanart' || p.background === 'fanart' || p.logo === 'fanart';
+			if (p && typeof p === 'object')
+				return p.poster === 'fanart' || p.background === 'fanart' || p.logo === 'fanart';
 			return false;
 		});
 	if (fanart) required.push('fanart');
 	return required.filter((k) => {
-		if (k === 'tmdb') return !(typeof config?.apiKeys?.tmdb === 'string' && config.apiKeys.tmdb.trim()) && !builtInTmdb;
+		if (k === 'tmdb')
+			return (
+				!(typeof config?.apiKeys?.tmdb === 'string' && config.apiKeys.tmdb.trim()) && !builtInTmdb
+			);
 		return !config?.apiKeys?.[k] || String(config.apiKeys[k]).trim() === '';
 	});
 }
 
-export async function startAiometadataMock(opts: AiometadataMockOptions = {}): Promise<AiometadataMock> {
+export async function startAiometadataMock(
+	opts: AiometadataMockOptions = {}
+): Promise<AiometadataMock> {
 	const state: AiometadataMockState = {
 		users: new Map(),
 		trusted: new Set(),
@@ -94,6 +116,7 @@ export async function startAiometadataMock(opts: AiometadataMockOptions = {}): P
 		addonPassword: opts.addonPassword === undefined ? 'dev-addon-password' : opts.addonPassword,
 		builtInTmdbKey: opts.builtInTmdbKey ?? false,
 		rateLimit: { enabled: true, loadPerMinute: 20 },
+		ready: true,
 		faults: new FaultQueue(),
 		limiter: new RateLimiter(),
 		requests: []
@@ -135,18 +158,24 @@ export async function startAiometadataMock(opts: AiometadataMockOptions = {}): P
 				}
 			};
 		}
-		if (req.headers['x-admin-key'] !== state.adminKey) return { status: 401, body: { error: 'Unauthorized' } };
+		if (req.headers['x-admin-key'] !== state.adminKey)
+			return { status: 401, body: { error: 'Unauthorized' } };
 		return null;
 	}
 
 	const INVALID_ADDON = { error: 'Invalid addon password. Contact the addon administrator.' };
 
-	async function handle(req: Req): Promise<{ status: number; body: unknown; headers?: Record<string, string> }> {
+	async function handle(
+		req: Req
+	): Promise<{ status: number; body: unknown; headers?: Record<string, string> }> {
 		const { method, path } = req;
 		const b = (req.body ?? {}) as Record<string, any>;
 
 		if (method === 'GET' && path === '/health/live') {
-			return { status: 200, body: { status: 'alive', timestamp: new Date().toISOString(), version: VERSION } };
+			return {
+				status: 200,
+				body: { status: 'alive', timestamp: new Date().toISOString(), version: VERSION }
+			};
 		}
 		if (method === 'GET' && path === '/health/ready') {
 			const c = (kind: string) => ({ kind, state: 'ready' });
@@ -169,11 +198,21 @@ export async function startAiometadataMock(opts: AiometadataMockOptions = {}): P
 						flixpatrolIndex: c('degradable'),
 						cacheWarming: c('deferred')
 					},
-					dependencies: { redis: { state: 'ok', latencyMs: 0 }, database: { state: 'ok', latencyMs: 0 } },
+					dependencies: {
+						redis: { state: 'ok', latencyMs: 0 },
+						database: { state: 'ok', latencyMs: 0 }
+					},
 					counters: {
 						errorsTotal: 0,
 						errorsToday: 0,
-						cache: { hits: 0, misses: 0, errors: 0, corruptedEntries: 0, hitRate: '0.00', errorRate: '0.00' }
+						cache: {
+							hits: 0,
+							misses: 0,
+							errors: 0,
+							corruptedEntries: 0,
+							hitRate: '0.00',
+							errorRate: '0.00'
+						}
 					},
 					timestamp: new Date().toISOString(),
 					version: VERSION
@@ -181,7 +220,10 @@ export async function startAiometadataMock(opts: AiometadataMockOptions = {}): P
 			};
 		}
 		if (method === 'GET' && path === '/api/config/addon-info') {
-			return { status: 200, body: { requiresAddonPassword: !!state.addonPassword, addonVersion: VERSION } };
+			return {
+				status: 200,
+				body: { requiresAddonPassword: !!state.addonPassword, addonVersion: VERSION }
+			};
 		}
 
 		// --- config API -------------------------------------------------------
@@ -195,7 +237,10 @@ export async function startAiometadataMock(opts: AiometadataMockOptions = {}): P
 			if (!addonPasswordOk(addonPassword)) return { status: 401, body: INVALID_ADDON };
 			const missing = missingRequiredKeys(config, state.builtInTmdbKey);
 			if (missing.length) {
-				return { status: 400, body: { error: `Missing required API keys: ${missing.join(', ')}`, missingKeys: missing } };
+				return {
+					status: 400,
+					body: { error: `Missing required API keys: ${missing.join(', ')}`, missingKeys: missing }
+				};
 			}
 			const uuid: string = existingUUID || randomUUID();
 			const withTs: Record<string, any> = { ...config, lastModified: Date.now() };
@@ -208,7 +253,9 @@ export async function startAiometadataMock(opts: AiometadataMockOptions = {}): P
 					success: true,
 					userUUID: uuid,
 					installUrl: installUrl(uuid),
-					message: existingUUID ? 'Configuration updated successfully' : 'Configuration saved successfully'
+					message: existingUUID
+						? 'Configuration updated successfully'
+						: 'Configuration saved successfully'
 				}
 			};
 		}
@@ -218,8 +265,16 @@ export async function startAiometadataMock(opts: AiometadataMockOptions = {}): P
 			const uuid = decodeURIComponent(m[1]);
 			if (state.rateLimit.enabled) {
 				const bucket = Math.floor(Date.now() / 60000);
-				const r = state.limiter.hit(`config-load:${uuid}:${bucket}`, state.rateLimit.loadPerMinute, 70_000);
-				if (r.limited) return { status: 429, body: { error: 'Too many login attempts. Please try again shortly.' } };
+				const r = state.limiter.hit(
+					`config-load:${uuid}:${bucket}`,
+					state.rateLimit.loadPerMinute,
+					70_000
+				);
+				if (r.limited)
+					return {
+						status: 429,
+						body: { error: 'Too many login attempts. Please try again shortly.' }
+					};
 			}
 			const { password, addonPassword } = b;
 			if (!password) return { status: 400, body: { error: 'Password is required' } };
@@ -229,12 +284,16 @@ export async function startAiometadataMock(opts: AiometadataMockOptions = {}): P
 			}
 			const user = verify(uuid, password);
 			if (!user) return { status: 401, body: { error: 'Invalid UUID or password' } };
-			if (!isTrusted && addonPassword && addonPassword === state.addonPassword) state.trusted.add(uuid);
+			if (!isTrusted && addonPassword && addonPassword === state.addonPassword)
+				state.trusted.add(uuid);
 			// Upstream spreads apiKeys and sets customDescriptionBlurb to undefined, so
 			// the response always has an apiKeys object, minus that one key.
 			const cfg = JSON.parse(JSON.stringify(user.config));
 			const out = { ...cfg, apiKeys: { ...cfg.apiKeys, customDescriptionBlurb: undefined } };
-			return { status: 200, body: { success: true, userUUID: uuid, installUrl: installUrl(uuid), config: out } };
+			return {
+				status: 200,
+				body: { success: true, userUUID: uuid, installUrl: installUrl(uuid), config: out }
+			};
 		}
 
 		m = /^\/api\/config\/update\/([^/]+)$/.exec(path);
@@ -243,19 +302,36 @@ export async function startAiometadataMock(opts: AiometadataMockOptions = {}): P
 			const { config, password, addonPassword } = b;
 			if (!password) return { status: 400, body: { error: 'Password is required' } };
 			if (!config) return { status: 400, body: { error: 'Configuration data is required' } };
-			if (!state.trusted.has(uuid) && state.addonPassword && addonPassword !== state.addonPassword) {
+			if (
+				!state.trusted.has(uuid) &&
+				state.addonPassword &&
+				addonPassword !== state.addonPassword
+			) {
 				return { status: 401, body: INVALID_ADDON };
 			}
 			const missing = missingRequiredKeys(config, state.builtInTmdbKey);
 			if (missing.length) {
-				return { status: 400, body: { error: `Missing required API keys: ${missing.join(', ')}`, missingKeys: missing } };
+				return {
+					status: 400,
+					body: { error: `Missing required API keys: ${missing.join(', ')}`, missingKeys: missing }
+				};
 			}
-			if (!verify(uuid, password)) return { status: 401, body: { error: 'Invalid UUID or password' } };
+			if (!verify(uuid, password))
+				return { status: 401, body: { error: 'Invalid UUID or password' } };
 			const now = Date.now();
-			saveUserConfig(uuid, hashPassword(password), { ...config, lastModified: now, configVersion: now + 1 });
+			saveUserConfig(uuid, hashPassword(password), {
+				...config,
+				lastModified: now,
+				configVersion: now + 1
+			});
 			return {
 				status: 200,
-				body: { success: true, userUUID: uuid, installUrl: installUrl(uuid), message: 'Configuration updated successfully' }
+				body: {
+					success: true,
+					userUUID: uuid,
+					installUrl: installUrl(uuid),
+					message: 'Configuration updated successfully'
+				}
 			};
 		}
 
@@ -263,7 +339,8 @@ export async function startAiometadataMock(opts: AiometadataMockOptions = {}): P
 		if (method === 'DELETE' && m) {
 			const uuid = decodeURIComponent(m[1]);
 			const { password } = b;
-			if (!uuid || !password) return { status: 400, body: { error: 'User UUID and password are required' } };
+			if (!uuid || !password)
+				return { status: 400, body: { error: 'User UUID and password are required' } };
 			if (!state.users.has(uuid)) return { status: 404, body: { error: 'User not found' } };
 			if (!verify(uuid, password)) return { status: 401, body: { error: 'Invalid password' } };
 			if (state.addonPassword && b.addonPassword !== state.addonPassword) {
@@ -273,7 +350,10 @@ export async function startAiometadataMock(opts: AiometadataMockOptions = {}): P
 			state.trusted.delete(uuid);
 			return {
 				status: 200,
-				body: { success: true, message: 'User account and all associated data have been permanently deleted' }
+				body: {
+					success: true,
+					message: 'User account and all associated data have been permanently deleted'
+				}
 			};
 		}
 
@@ -287,7 +367,9 @@ export async function startAiometadataMock(opts: AiometadataMockOptions = {}): P
 				const offsetN = parseInt(req.query.get('offset') ?? '', 10);
 				const limit = Math.max(1, Math.min(500, Number.isFinite(limitN) ? limitN : 100));
 				const offset = Math.max(0, Number.isFinite(offsetN) ? offsetN : 0);
-				const q = String(req.query.get('q') ?? '').trim().toLowerCase();
+				const q = String(req.query.get('q') ?? '')
+					.trim()
+					.toLowerCase();
 				const all = sortedUsers().filter((u) => !q || u.uuid.startsWith(q));
 				const weekAgo = Date.now() - 7 * 24 * 3600 * 1000;
 				return {
@@ -316,11 +398,18 @@ export async function startAiometadataMock(opts: AiometadataMockOptions = {}): P
 				const users = sortedUsers();
 				return {
 					status: 200,
-					headers: { 'content-disposition': `attachment; filename=users-export-${date.split('T')[0]}.json` },
+					headers: {
+						'content-disposition': `attachment; filename=users-export-${date.split('T')[0]}.json`
+					},
 					body: {
 						exportDate: date,
 						totalUsers: users.length,
-						users: users.map((u) => ({ uuid: u.uuid, created_at: u.createdAt, updated_at: u.updatedAt, config: u.config }))
+						users: users.map((u) => ({
+							uuid: u.uuid,
+							created_at: u.createdAt,
+							updated_at: u.updatedAt,
+							config: u.config
+						}))
 					}
 				};
 			}
@@ -394,7 +483,9 @@ export async function startAiometadataMock(opts: AiometadataMockOptions = {}): P
 
 	function sortedUsers(): AiometadataUser[] {
 		// ORDER BY created_at DESC; ties keep newest insert first.
-		return [...state.users.values()].reverse().sort((a, b) => (a.createdAt < b.createdAt ? 1 : a.createdAt > b.createdAt ? -1 : 0));
+		return [...state.users.values()]
+			.reverse()
+			.sort((a, b) => (a.createdAt < b.createdAt ? 1 : a.createdAt > b.createdAt ? -1 : 0));
 	}
 
 	const server: Server = createServer(async (rawReq, res) => {
@@ -402,6 +493,19 @@ export async function startAiometadataMock(opts: AiometadataMockOptions = {}): P
 			const req = await readRequest(rawReq);
 			state.requests.push({ method: req.method, path: req.path });
 			if (await applyFault(state.faults.take(req.method, req.path), res)) return;
+			if (!state.ready && !req.path.startsWith('/health')) {
+				sendJson(
+					res,
+					503,
+					{
+						status: 'starting',
+						message: 'The addon is still initializing. Retry shortly.',
+						components: {}
+					},
+					{ 'retry-after': '5' }
+				);
+				return;
+			}
 			if (req.bodyError) {
 				sendJson(res, 400, { error: 'Invalid JSON body' });
 				return;
@@ -423,6 +527,7 @@ export async function startAiometadataMock(opts: AiometadataMockOptions = {}): P
 		reset() {
 			state.users.clear();
 			state.trusted.clear();
+			state.ready = true;
 			state.faults.clear();
 			state.limiter.reset();
 			state.requests.length = 0;

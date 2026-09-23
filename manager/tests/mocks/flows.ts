@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- mocks handle arbitrary upstream JSON */
 /**
  * The request sequences the manager performs against each upstream.
  *
@@ -93,7 +94,11 @@ export const aiometadataFlow: Flow = {
 			method: 'POST',
 			path: '/api/config/save',
 			headers: JSON_HEADERS,
-			body: { config: { language: 'en-US' }, password: '{{password}}', addonPassword: AMD.addonPassword },
+			body: {
+				config: { language: 'en-US' },
+				password: '{{password}}',
+				addonPassword: AMD.addonPassword
+			},
 			expectStatus: 400
 		},
 		{
@@ -101,7 +106,11 @@ export const aiometadataFlow: Flow = {
 			method: 'POST',
 			path: '/api/config/save',
 			headers: JSON_HEADERS,
-			body: { config: AIOMETADATA_MINIMAL_CONFIG, password: '{{password}}', addonPassword: 'wrong' },
+			body: {
+				config: AIOMETADATA_MINIMAL_CONFIG,
+				password: '{{password}}',
+				addonPassword: 'wrong'
+			},
 			expectStatus: 401
 		},
 		{
@@ -117,7 +126,11 @@ export const aiometadataFlow: Flow = {
 			method: 'POST',
 			path: '/api/config/save',
 			headers: JSON_HEADERS,
-			body: { config: AIOMETADATA_MINIMAL_CONFIG, password: '{{password}}', addonPassword: AMD.addonPassword },
+			body: {
+				config: AIOMETADATA_MINIMAL_CONFIG,
+				password: '{{password}}',
+				addonPassword: AMD.addonPassword
+			},
 			expectStatus: 200,
 			capture: (res, vars) => {
 				vars.uuid = body(res).userUUID;
@@ -166,7 +179,11 @@ export const aiometadataFlow: Flow = {
 			method: 'PUT',
 			path: '/api/config/update/{{uuid}}',
 			headers: JSON_HEADERS,
-			body: { config: AIOMETADATA_MINIMAL_CONFIG, password: 'nope', addonPassword: AMD.addonPassword },
+			body: {
+				config: AIOMETADATA_MINIMAL_CONFIG,
+				password: 'nope',
+				addonPassword: AMD.addonPassword
+			},
 			expectStatus: 401
 		},
 		{
@@ -327,7 +344,7 @@ export const aiometadataFlow: Flow = {
 const AIOS_LOGIN = { username: 'manager', password: 'managerpass' };
 
 function aiostreamsCrudSteps(withSession: boolean): Step[] {
-	const cookie = withSession ? { cookie: '{{sessionCookie}}' } : {};
+	const cookie: Record<string, string> = withSession ? { cookie: '{{sessionCookie}}' } : {};
 	return [
 		{
 			name: 'create_missing_fields',
@@ -451,7 +468,12 @@ function aiostreamsCrudSteps(withSession: boolean): Step[] {
 			headers: { authorization: 'Basic {{basic}}' },
 			expectStatus: 200
 		},
-		{ name: 'exists_after_delete', method: 'HEAD', path: '/api/v1/user?uuid={{uuid}}', expectStatus: 400 },
+		{
+			name: 'exists_after_delete',
+			method: 'HEAD',
+			path: '/api/v1/user?uuid={{uuid}}',
+			expectStatus: 400
+		},
 		{
 			name: 'read_after_delete',
 			method: 'GET',

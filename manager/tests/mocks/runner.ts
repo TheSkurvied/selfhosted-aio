@@ -73,7 +73,8 @@ export async function runFlow(flow: Flow, baseUrl: string): Promise<RecordedExch
 			result.response.status !== step.repeatUntilStatus &&
 			attempts < (step.maxRepeats ?? 30)
 		);
-		if (step.capture && result.response.status === step.expectStatus) step.capture(result.response, vars);
+		if (step.capture && result.response.status === step.expectStatus)
+			step.capture(result.response, vars);
 		out.push({
 			name: step.name,
 			...(step.note ? { note: step.note } : {}),
@@ -100,14 +101,16 @@ export function shapeDiff(
 	key = ''
 ): string[] {
 	const exactKeys = opts.exactKeys ?? DEFAULT_EXACT_KEYS;
-	if (opts.ignore?.some((p) => path === p || path.startsWith(p + '.') || path.startsWith(p + '['))) return [];
+	if (opts.ignore?.some((p) => path === p || path.startsWith(p + '.') || path.startsWith(p + '[')))
+		return [];
 	const te = typeOf(expected);
 	const ta = typeOf(actual);
 	if (te !== ta) return [`${path}: expected ${te}, got ${ta}`];
 	if (te === 'array') {
 		const e = expected as unknown[];
 		const a = actual as unknown[];
-		if ((e.length === 0) !== (a.length === 0)) return [`${path}: expected ${e.length} items, got ${a.length}`];
+		if ((e.length === 0) !== (a.length === 0))
+			return [`${path}: expected ${e.length} items, got ${a.length}`];
 		return e.length ? shapeDiff(e[0], a[0], opts, `${path}[0]`) : [];
 	}
 	if (te === 'object') {
@@ -120,7 +123,8 @@ export function shapeDiff(
 			} else diffs.push(...shapeDiff(e[k], a[k], opts, `${path}.${k}`, k));
 		}
 		for (const k of Object.keys(a)) {
-			if (!(k in e) && !opts.ignore?.includes(`${path}.${k}`)) diffs.push(`${path}.${k}: unexpected`);
+			if (!(k in e) && !opts.ignore?.includes(`${path}.${k}`))
+				diffs.push(`${path}.${k}: unexpected`);
 		}
 		return diffs;
 	}
