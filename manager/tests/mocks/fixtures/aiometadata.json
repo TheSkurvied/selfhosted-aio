@@ -1,0 +1,939 @@
+{
+	"service": "aiometadata",
+	"variant": "default",
+	"recordedAt": "2026-09-23T18:05:33.441Z",
+	"upstream": {
+		"commit": "7ef886c6c4bb3a5d665411051637aa375edeba37",
+		"baseUrl": "http://localhost:13232"
+	},
+	"exchanges": [
+		{
+			"name": "health_live",
+			"request": {
+				"method": "GET",
+				"path": "/health/live",
+				"headers": {}
+			},
+			"response": {
+				"status": 200,
+				"headers": {
+					"content-type": "application/json; charset=utf-8"
+				},
+				"body": {
+					"status": "alive",
+					"timestamp": "2026-09-23T18:05:29.591Z",
+					"version": "3.0.0"
+				}
+			},
+			"expectStatus": 200
+		},
+		{
+			"name": "health_ready",
+			"request": {
+				"method": "GET",
+				"path": "/health/ready",
+				"headers": {}
+			},
+			"response": {
+				"status": 200,
+				"headers": {
+					"content-type": "application/json; charset=utf-8"
+				},
+				"body": {
+					"status": "ready",
+					"ready": true,
+					"components": {
+						"database": {
+							"kind": "required",
+							"state": "ready"
+						},
+						"settings": {
+							"kind": "required",
+							"state": "ready"
+						},
+						"redis": {
+							"kind": "required",
+							"state": "ready"
+						},
+						"idMapper": {
+							"kind": "degradable",
+							"state": "ready"
+						},
+						"animeListMapper": {
+							"kind": "degradable",
+							"state": "ready"
+						},
+						"wikiMappings": {
+							"kind": "degradable",
+							"state": "ready"
+						},
+						"imdbRatings": {
+							"kind": "degradable",
+							"state": "ready"
+						},
+						"tmdbNetworkIndex": {
+							"kind": "degradable",
+							"state": "degraded",
+							"error": "Proxy response (403) !== 200 when HTTP Tunneling"
+						},
+						"tmdbKeywordIndex": {
+							"kind": "degradable",
+							"state": "degraded",
+							"error": "Proxy response (403) !== 200 when HTTP Tunneling"
+						},
+						"cacheCleanup": {
+							"kind": "degradable",
+							"state": "ready"
+						},
+						"flixpatrolIndex": {
+							"kind": "degradable",
+							"state": "ready"
+						},
+						"cacheWarming": {
+							"kind": "deferred",
+							"state": "ready"
+						}
+					},
+					"dependencies": {
+						"redis": {
+							"state": "ok",
+							"latencyMs": 1
+						},
+						"database": {
+							"state": "ok",
+							"latencyMs": 0
+						}
+					},
+					"counters": {
+						"errorsTotal": 0,
+						"errorsToday": 0,
+						"cache": {
+							"hits": 0,
+							"misses": 7,
+							"errors": 3,
+							"corruptedEntries": 0,
+							"hitRate": "0.00",
+							"errorRate": "42.86"
+						}
+					},
+					"timestamp": "2026-09-23T18:05:29.602Z",
+					"version": "3.0.0"
+				}
+			},
+			"expectStatus": 200
+		},
+		{
+			"name": "addon_info",
+			"request": {
+				"method": "GET",
+				"path": "/api/config/addon-info",
+				"headers": {}
+			},
+			"response": {
+				"status": 200,
+				"headers": {
+					"content-type": "application/json; charset=utf-8"
+				},
+				"body": {
+					"requiresAddonPassword": true,
+					"addonVersion": "3.0.0"
+				}
+			},
+			"expectStatus": 200
+		},
+		{
+			"name": "save_missing_tmdb_key",
+			"request": {
+				"method": "POST",
+				"path": "/api/config/save",
+				"headers": {
+					"content-type": "application/json"
+				},
+				"body": {
+					"config": {
+						"language": "en-US"
+					},
+					"password": "person-pass-1",
+					"addonPassword": "dev-addon-password"
+				}
+			},
+			"response": {
+				"status": 400,
+				"headers": {
+					"content-type": "application/json; charset=utf-8"
+				},
+				"body": {
+					"error": "Missing required API keys: tmdb",
+					"missingKeys": [
+						"tmdb"
+					]
+				}
+			},
+			"expectStatus": 400
+		},
+		{
+			"name": "save_bad_addon_password",
+			"request": {
+				"method": "POST",
+				"path": "/api/config/save",
+				"headers": {
+					"content-type": "application/json"
+				},
+				"body": {
+					"config": {
+						"language": "en-US",
+						"apiKeys": {
+							"tmdb": "dev-tmdb-key"
+						}
+					},
+					"password": "person-pass-1",
+					"addonPassword": "wrong"
+				}
+			},
+			"response": {
+				"status": 401,
+				"headers": {
+					"content-type": "application/json; charset=utf-8"
+				},
+				"body": {
+					"error": "Invalid addon password. Contact the addon administrator."
+				}
+			},
+			"expectStatus": 401
+		},
+		{
+			"name": "save_missing_password",
+			"request": {
+				"method": "POST",
+				"path": "/api/config/save",
+				"headers": {
+					"content-type": "application/json"
+				},
+				"body": {
+					"config": {
+						"language": "en-US",
+						"apiKeys": {
+							"tmdb": "dev-tmdb-key"
+						}
+					},
+					"addonPassword": "dev-addon-password"
+				}
+			},
+			"response": {
+				"status": 400,
+				"headers": {
+					"content-type": "application/json; charset=utf-8"
+				},
+				"body": {
+					"error": "Password is required"
+				}
+			},
+			"expectStatus": 400
+		},
+		{
+			"name": "save",
+			"request": {
+				"method": "POST",
+				"path": "/api/config/save",
+				"headers": {
+					"content-type": "application/json"
+				},
+				"body": {
+					"config": {
+						"language": "en-US",
+						"apiKeys": {
+							"tmdb": "dev-tmdb-key"
+						}
+					},
+					"password": "person-pass-1",
+					"addonPassword": "dev-addon-password"
+				}
+			},
+			"response": {
+				"status": 200,
+				"headers": {
+					"content-type": "application/json; charset=utf-8"
+				},
+				"body": {
+					"success": true,
+					"userUUID": "7c9cfd6a-111a-4726-a3fd-ec73ba5f3152",
+					"installUrl": "http://localhost:13232/stremio/7c9cfd6a-111a-4726-a3fd-ec73ba5f3152/manifest.json",
+					"message": "Configuration saved successfully"
+				}
+			},
+			"expectStatus": 200
+		},
+		{
+			"name": "load",
+			"request": {
+				"method": "POST",
+				"path": "/api/config/load/7c9cfd6a-111a-4726-a3fd-ec73ba5f3152",
+				"headers": {
+					"content-type": "application/json"
+				},
+				"body": {
+					"password": "person-pass-1",
+					"addonPassword": "dev-addon-password"
+				}
+			},
+			"response": {
+				"status": 200,
+				"headers": {
+					"content-type": "application/json; charset=utf-8"
+				},
+				"body": {
+					"success": true,
+					"userUUID": "7c9cfd6a-111a-4726-a3fd-ec73ba5f3152",
+					"installUrl": "http://localhost:13232/stremio/7c9cfd6a-111a-4726-a3fd-ec73ba5f3152/manifest.json",
+					"config": {
+						"language": "en-US",
+						"apiKeys": {
+							"tmdb": "dev-tmdb-key"
+						},
+						"lastModified": 1790186729909,
+						"configVersion": 1790186729909,
+						"configHash": "295ce351f22b8010"
+					}
+				}
+			},
+			"expectStatus": 200
+		},
+		{
+			"name": "load_trusted_without_addon_password",
+			"note": "save() trusts the new uuid, so later loads/updates skip the addon password check",
+			"request": {
+				"method": "POST",
+				"path": "/api/config/load/7c9cfd6a-111a-4726-a3fd-ec73ba5f3152",
+				"headers": {
+					"content-type": "application/json"
+				},
+				"body": {
+					"password": "person-pass-1"
+				}
+			},
+			"response": {
+				"status": 200,
+				"headers": {
+					"content-type": "application/json; charset=utf-8"
+				},
+				"body": {
+					"success": true,
+					"userUUID": "7c9cfd6a-111a-4726-a3fd-ec73ba5f3152",
+					"installUrl": "http://localhost:13232/stremio/7c9cfd6a-111a-4726-a3fd-ec73ba5f3152/manifest.json",
+					"config": {
+						"language": "en-US",
+						"apiKeys": {
+							"tmdb": "dev-tmdb-key"
+						},
+						"lastModified": 1790186729909,
+						"configVersion": 1790186729909,
+						"configHash": "295ce351f22b8010"
+					}
+				}
+			},
+			"expectStatus": 200
+		},
+		{
+			"name": "load_wrong_password",
+			"request": {
+				"method": "POST",
+				"path": "/api/config/load/7c9cfd6a-111a-4726-a3fd-ec73ba5f3152",
+				"headers": {
+					"content-type": "application/json"
+				},
+				"body": {
+					"password": "nope",
+					"addonPassword": "dev-addon-password"
+				}
+			},
+			"response": {
+				"status": 401,
+				"headers": {
+					"content-type": "application/json; charset=utf-8"
+				},
+				"body": {
+					"error": "Invalid UUID or password"
+				}
+			},
+			"expectStatus": 401
+		},
+		{
+			"name": "update",
+			"request": {
+				"method": "PUT",
+				"path": "/api/config/update/7c9cfd6a-111a-4726-a3fd-ec73ba5f3152",
+				"headers": {
+					"content-type": "application/json"
+				},
+				"body": {
+					"config": {
+						"language": "fr-FR",
+						"apiKeys": {
+							"tmdb": "dev-tmdb-key"
+						}
+					},
+					"password": "person-pass-1",
+					"addonPassword": "dev-addon-password"
+				}
+			},
+			"response": {
+				"status": 200,
+				"headers": {
+					"content-type": "application/json; charset=utf-8"
+				},
+				"body": {
+					"success": true,
+					"userUUID": "7c9cfd6a-111a-4726-a3fd-ec73ba5f3152",
+					"installUrl": "http://localhost:13232/stremio/7c9cfd6a-111a-4726-a3fd-ec73ba5f3152/manifest.json",
+					"message": "Configuration updated successfully"
+				}
+			},
+			"expectStatus": 200
+		},
+		{
+			"name": "update_wrong_password",
+			"request": {
+				"method": "PUT",
+				"path": "/api/config/update/7c9cfd6a-111a-4726-a3fd-ec73ba5f3152",
+				"headers": {
+					"content-type": "application/json"
+				},
+				"body": {
+					"config": {
+						"language": "en-US",
+						"apiKeys": {
+							"tmdb": "dev-tmdb-key"
+						}
+					},
+					"password": "nope",
+					"addonPassword": "dev-addon-password"
+				}
+			},
+			"response": {
+				"status": 401,
+				"headers": {
+					"content-type": "application/json; charset=utf-8"
+				},
+				"body": {
+					"error": "Invalid UUID or password"
+				}
+			},
+			"expectStatus": 401
+		},
+		{
+			"name": "update_missing_config",
+			"request": {
+				"method": "PUT",
+				"path": "/api/config/update/7c9cfd6a-111a-4726-a3fd-ec73ba5f3152",
+				"headers": {
+					"content-type": "application/json"
+				},
+				"body": {
+					"password": "person-pass-1",
+					"addonPassword": "dev-addon-password"
+				}
+			},
+			"response": {
+				"status": 400,
+				"headers": {
+					"content-type": "application/json; charset=utf-8"
+				},
+				"body": {
+					"error": "Configuration data is required"
+				}
+			},
+			"expectStatus": 400
+		},
+		{
+			"name": "load_after_update",
+			"request": {
+				"method": "POST",
+				"path": "/api/config/load/7c9cfd6a-111a-4726-a3fd-ec73ba5f3152",
+				"headers": {
+					"content-type": "application/json"
+				},
+				"body": {
+					"password": "person-pass-1",
+					"addonPassword": "dev-addon-password"
+				}
+			},
+			"response": {
+				"status": 200,
+				"headers": {
+					"content-type": "application/json; charset=utf-8"
+				},
+				"body": {
+					"success": true,
+					"userUUID": "7c9cfd6a-111a-4726-a3fd-ec73ba5f3152",
+					"installUrl": "http://localhost:13232/stremio/7c9cfd6a-111a-4726-a3fd-ec73ba5f3152/manifest.json",
+					"config": {
+						"language": "fr-FR",
+						"apiKeys": {
+							"tmdb": "dev-tmdb-key"
+						},
+						"lastModified": 1790186731347,
+						"configVersion": 1790186731348,
+						"configHash": "3f76b13b0217512b"
+					}
+				}
+			},
+			"expectStatus": 200
+		},
+		{
+			"name": "admin_list_no_key",
+			"request": {
+				"method": "GET",
+				"path": "/api/admin/users",
+				"headers": {}
+			},
+			"response": {
+				"status": 401,
+				"headers": {
+					"content-type": "application/json; charset=utf-8"
+				},
+				"body": {
+					"error": "Unauthorized"
+				}
+			},
+			"expectStatus": 401
+		},
+		{
+			"name": "admin_list_wrong_key",
+			"request": {
+				"method": "GET",
+				"path": "/api/admin/users",
+				"headers": {
+					"x-admin-key": "wrong"
+				}
+			},
+			"response": {
+				"status": 401,
+				"headers": {
+					"content-type": "application/json; charset=utf-8"
+				},
+				"body": {
+					"error": "Unauthorized"
+				}
+			},
+			"expectStatus": 401
+		},
+		{
+			"name": "admin_list",
+			"request": {
+				"method": "GET",
+				"path": "/api/admin/users?q=&limit=50&offset=0",
+				"headers": {
+					"x-admin-key": "dev-admin-key"
+				}
+			},
+			"response": {
+				"status": 200,
+				"headers": {
+					"content-type": "application/json; charset=utf-8"
+				},
+				"body": {
+					"total": 1,
+					"users": [
+						{
+							"uuid": "7c9cfd6a-111a-4726-a3fd-ec73ba5f3152",
+							"alias": null,
+							"created_at": "2026-09-23 18:05:29",
+							"last_updated": "2026-09-23 18:05:31",
+							"last_activity": null,
+							"total_requests": 0,
+							"has_api_keys": true,
+							"config_status": "configured",
+							"is_active": true
+						}
+					]
+				}
+			},
+			"expectStatus": 200
+		},
+		{
+			"name": "admin_list_search_prefix",
+			"request": {
+				"method": "GET",
+				"path": "/api/admin/users?q=7c9cfd6a&limit=50&offset=0",
+				"headers": {
+					"x-admin-key": "dev-admin-key"
+				}
+			},
+			"response": {
+				"status": 200,
+				"headers": {
+					"content-type": "application/json; charset=utf-8"
+				},
+				"body": {
+					"total": 1,
+					"users": [
+						{
+							"uuid": "7c9cfd6a-111a-4726-a3fd-ec73ba5f3152",
+							"alias": null,
+							"created_at": "2026-09-23 18:05:29",
+							"last_updated": "2026-09-23 18:05:31",
+							"last_activity": null,
+							"total_requests": 0,
+							"has_api_keys": true,
+							"config_status": "configured",
+							"is_active": true
+						}
+					]
+				}
+			},
+			"expectStatus": 200
+		},
+		{
+			"name": "admin_detail",
+			"request": {
+				"method": "GET",
+				"path": "/api/admin/users/7c9cfd6a-111a-4726-a3fd-ec73ba5f3152",
+				"headers": {
+					"x-admin-key": "dev-admin-key"
+				}
+			},
+			"response": {
+				"status": 200,
+				"headers": {
+					"content-type": "application/json; charset=utf-8"
+				},
+				"body": {
+					"user": {
+						"uuid": "7c9cfd6a-111a-4726-a3fd-ec73ba5f3152",
+						"created_at": "2026-09-23 18:05:29",
+						"last_updated": "2026-09-23 18:05:31",
+						"last_activity": null,
+						"total_requests": 0,
+						"api_keys": {
+							"tmdb": true,
+							"tvdb": false,
+							"imdb": false,
+							"kitsu": false
+						},
+						"streaming_services": [],
+						"catalogs_count": 0,
+						"language": "fr-FR",
+						"region": "US"
+					}
+				}
+			},
+			"expectStatus": 200
+		},
+		{
+			"name": "admin_detail_missing",
+			"request": {
+				"method": "GET",
+				"path": "/api/admin/users/00000000-0000-4000-8000-000000000000",
+				"headers": {
+					"x-admin-key": "dev-admin-key"
+				}
+			},
+			"response": {
+				"status": 404,
+				"headers": {
+					"content-type": "application/json; charset=utf-8"
+				},
+				"body": {
+					"error": "User not found"
+				}
+			},
+			"expectStatus": 404
+		},
+		{
+			"name": "admin_reset_password",
+			"request": {
+				"method": "POST",
+				"path": "/api/admin/users/7c9cfd6a-111a-4726-a3fd-ec73ba5f3152/reset-password",
+				"headers": {
+					"content-type": "application/json",
+					"x-admin-key": "dev-admin-key"
+				},
+				"body": {
+					"newPassword": "person-pass-2"
+				}
+			},
+			"response": {
+				"status": 200,
+				"headers": {
+					"content-type": "application/json; charset=utf-8"
+				},
+				"body": {
+					"success": true
+				}
+			},
+			"expectStatus": 200
+		},
+		{
+			"name": "admin_reset_password_missing",
+			"request": {
+				"method": "POST",
+				"path": "/api/admin/users/00000000-0000-4000-8000-000000000000/reset-password",
+				"headers": {
+					"content-type": "application/json",
+					"x-admin-key": "dev-admin-key"
+				},
+				"body": {
+					"newPassword": "x"
+				}
+			},
+			"response": {
+				"status": 404,
+				"headers": {
+					"content-type": "application/json; charset=utf-8"
+				},
+				"body": {
+					"error": "User not found"
+				}
+			},
+			"expectStatus": 404
+		},
+		{
+			"name": "load_old_password_after_reset",
+			"request": {
+				"method": "POST",
+				"path": "/api/config/load/7c9cfd6a-111a-4726-a3fd-ec73ba5f3152",
+				"headers": {
+					"content-type": "application/json"
+				},
+				"body": {
+					"password": "person-pass-1",
+					"addonPassword": "dev-addon-password"
+				}
+			},
+			"response": {
+				"status": 401,
+				"headers": {
+					"content-type": "application/json; charset=utf-8"
+				},
+				"body": {
+					"error": "Invalid UUID or password"
+				}
+			},
+			"expectStatus": 401
+		},
+		{
+			"name": "load_new_password_after_reset",
+			"request": {
+				"method": "POST",
+				"path": "/api/config/load/7c9cfd6a-111a-4726-a3fd-ec73ba5f3152",
+				"headers": {
+					"content-type": "application/json"
+				},
+				"body": {
+					"password": "person-pass-2",
+					"addonPassword": "dev-addon-password"
+				}
+			},
+			"response": {
+				"status": 200,
+				"headers": {
+					"content-type": "application/json; charset=utf-8"
+				},
+				"body": {
+					"success": true,
+					"userUUID": "7c9cfd6a-111a-4726-a3fd-ec73ba5f3152",
+					"installUrl": "http://localhost:13232/stremio/7c9cfd6a-111a-4726-a3fd-ec73ba5f3152/manifest.json",
+					"config": {
+						"language": "fr-FR",
+						"apiKeys": {
+							"tmdb": "dev-tmdb-key"
+						},
+						"lastModified": 1790186731347,
+						"configVersion": 1790186731348,
+						"configHash": "3f76b13b0217512b"
+					}
+				}
+			},
+			"expectStatus": 200
+		},
+		{
+			"name": "save_overwrite_with_userUUID",
+			"note": "save with userUUID overwrites without checking the old password (spec 7.2)",
+			"request": {
+				"method": "POST",
+				"path": "/api/config/save",
+				"headers": {
+					"content-type": "application/json"
+				},
+				"body": {
+					"config": {
+						"language": "de-DE",
+						"apiKeys": {
+							"tmdb": "dev-tmdb-key"
+						}
+					},
+					"password": "person-pass-2",
+					"addonPassword": "dev-addon-password",
+					"userUUID": "7c9cfd6a-111a-4726-a3fd-ec73ba5f3152"
+				}
+			},
+			"response": {
+				"status": 200,
+				"headers": {
+					"content-type": "application/json; charset=utf-8"
+				},
+				"body": {
+					"success": true,
+					"userUUID": "7c9cfd6a-111a-4726-a3fd-ec73ba5f3152",
+					"installUrl": "http://localhost:13232/stremio/7c9cfd6a-111a-4726-a3fd-ec73ba5f3152/manifest.json",
+					"message": "Configuration updated successfully"
+				}
+			},
+			"expectStatus": 200
+		},
+		{
+			"name": "admin_export",
+			"request": {
+				"method": "GET",
+				"path": "/api/admin/users/export",
+				"headers": {
+					"x-admin-key": "dev-admin-key"
+				}
+			},
+			"response": {
+				"status": 200,
+				"headers": {
+					"content-type": "application/json; charset=utf-8",
+					"content-disposition": "attachment; filename=users-export-2026-09-23.json"
+				},
+				"body": {
+					"exportDate": "2026-09-23T18:05:33.390Z",
+					"totalUsers": 1,
+					"users": [
+						{
+							"uuid": "7c9cfd6a-111a-4726-a3fd-ec73ba5f3152",
+							"created_at": "2026-09-23 18:05:29",
+							"updated_at": "2026-09-23 18:05:33",
+							"config": {
+								"language": "de-DE",
+								"apiKeys": {
+									"tmdb": "dev-tmdb-key"
+								},
+								"lastModified": 1790186733382,
+								"configVersion": 1790186733382,
+								"configHash": "35efc7eec1904f79"
+							}
+						}
+					]
+				}
+			},
+			"expectStatus": 200
+		},
+		{
+			"name": "admin_delete",
+			"request": {
+				"method": "DELETE",
+				"path": "/api/admin/users/7c9cfd6a-111a-4726-a3fd-ec73ba5f3152",
+				"headers": {
+					"x-admin-key": "dev-admin-key"
+				}
+			},
+			"response": {
+				"status": 200,
+				"headers": {
+					"content-type": "application/json; charset=utf-8"
+				},
+				"body": {
+					"success": true,
+					"message": "User deleted successfully"
+				}
+			},
+			"expectStatus": 200
+		},
+		{
+			"name": "admin_delete_again",
+			"request": {
+				"method": "DELETE",
+				"path": "/api/admin/users/7c9cfd6a-111a-4726-a3fd-ec73ba5f3152",
+				"headers": {
+					"x-admin-key": "dev-admin-key"
+				}
+			},
+			"response": {
+				"status": 404,
+				"headers": {
+					"content-type": "application/json; charset=utf-8"
+				},
+				"body": {
+					"error": "User not found"
+				}
+			},
+			"expectStatus": 404
+		},
+		{
+			"name": "load_after_delete_without_addon_password",
+			"note": "delete removes the trusted_uuids row, so the addon password is required again",
+			"request": {
+				"method": "POST",
+				"path": "/api/config/load/7c9cfd6a-111a-4726-a3fd-ec73ba5f3152",
+				"headers": {
+					"content-type": "application/json"
+				},
+				"body": {
+					"password": "person-pass-2"
+				}
+			},
+			"response": {
+				"status": 401,
+				"headers": {
+					"content-type": "application/json; charset=utf-8"
+				},
+				"body": {
+					"error": "Invalid addon password. Contact the addon administrator."
+				}
+			},
+			"expectStatus": 401
+		},
+		{
+			"name": "load_after_delete",
+			"note": "a missing config is 401 \"Invalid UUID or password\", never 404",
+			"request": {
+				"method": "POST",
+				"path": "/api/config/load/7c9cfd6a-111a-4726-a3fd-ec73ba5f3152",
+				"headers": {
+					"content-type": "application/json"
+				},
+				"body": {
+					"password": "person-pass-2",
+					"addonPassword": "dev-addon-password"
+				}
+			},
+			"response": {
+				"status": 401,
+				"headers": {
+					"content-type": "application/json; charset=utf-8"
+				},
+				"body": {
+					"error": "Invalid UUID or password"
+				}
+			},
+			"expectStatus": 401
+		},
+		{
+			"name": "load_rate_limited",
+			"note": "CONFIG_LOAD_RATE_LIMIT_PER_MIN (default 20) per uuid per minute bucket",
+			"request": {
+				"method": "POST",
+				"path": "/api/config/load/00000000-0000-4000-8000-00000000beef",
+				"headers": {
+					"content-type": "application/json"
+				},
+				"body": {
+					"password": "x",
+					"addonPassword": "dev-addon-password"
+				}
+			},
+			"response": {
+				"status": 429,
+				"headers": {
+					"content-type": "application/json; charset=utf-8"
+				},
+				"body": {
+					"error": "Too many login attempts. Please try again shortly."
+				}
+			},
+			"expectStatus": 429,
+			"attempts": 21
+		}
+	]
+}
